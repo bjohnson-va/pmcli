@@ -2,9 +2,9 @@ package parse
 
 import (
 	"fmt"
-	"github.com/emicklei/proto"
 	"strings"
 	"github.com/bjohnson-va/pmcli/protofiles"
+	"github.com/emicklei/proto"
 )
 
 var (

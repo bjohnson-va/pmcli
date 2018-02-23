@@ -9,35 +9,33 @@ import (
 	"net"
 	"os"
 	"github.com/bjohnson-va/pmcli/handlers"
-	"github.com/bjohnson-va/pmcli/protofiles"
 	"github.com/fsnotify/fsnotify"
 	"github.com/vendasta/gosdks/logging"
-	"github.com/vendasta/mscli/pkg/spec"
 )
 
 // TODO: Helper for generating initial config file
 
-func BuildAndRun(file spec.MicroserviceFile, mockServerPort int,
+func BuildAndRun(mockServerPort int,
 	allowedOrigin string, rootDir string, configFile string) error {
 	ctx := context.Background()
 
 	d := serverDetails{
-		microServiceConfig: file.Microservice,
-		port:               mockServerPort,
-		allowedOrigin:      allowedOrigin,
-		rootDir:            rootDir,
-		configFilePath:     configFile,
+		port:           mockServerPort,
+		allowedOrigin:  allowedOrigin,
+		rootDir:        rootDir,
+		configFilePath: configFile,
+		protofileNames: []string{"advertising/v1/api.proto"}, // TODO: Read from config file
 	}
 	runServerInBackgroundAndRestartOnConfigFileChanges(ctx, d)
 	return nil
 }
 
 type serverDetails struct {
-	microServiceConfig spec.MicroserviceConfig
-	port               int
-	allowedOrigin      string
-	rootDir            string
-	configFilePath     string
+	port           int
+	allowedOrigin  string
+	rootDir        string
+	configFilePath string
+	protofileNames []string
 }
 
 func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d serverDetails) error {
@@ -131,12 +129,9 @@ func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d 
 
 func buildServerMux(ctx context.Context, d serverDetails, config interface{}) (
 	*http.ServeMux, error) {
-	protofileNames, err := protofiles.GetNames(d.microServiceConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get protofile names: %s", err.Error())
-	}
+
 	mux := http.NewServeMux()
-	for _, p := range protofileNames {
+	for _, p := range d.protofileNames {
 		logging.Infof(ctx, "Building endpoints for: %s/%s", d.rootDir, p)
 		h, err := handlers.FromProtofile(d.allowedOrigin, d.rootDir, p, config)
 		if err != nil {

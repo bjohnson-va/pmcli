@@ -1,21 +1,10 @@
 package protofiles
 
 import (
-	"github.com/vendasta/mscli/pkg/spec"
 	"fmt"
 	"os"
 	"github.com/emicklei/proto"
 )
-
-func GetNames(config spec.MicroserviceConfig) ([]string, error) {
-	protoPaths := config.GetSDKProtoPaths()
-
-	var absolutePaths []string
-	for _, p := range protoPaths {
-		absolutePaths = append(absolutePaths, p)
-	}
-	return absolutePaths, nil
-}
 
 func Read(absoluteFilePath string) (*proto.Proto, error) {
 	f := fmt.Sprintf("%s", absoluteFilePath)

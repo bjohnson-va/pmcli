@@ -1,14 +1,5 @@
 package mockserver
 
-import (
-	"strings"
-	"math"
-	"fmt"
-	"github.com/emicklei/proto"
-	"github.com/vendasta/gosdks/util"
-	"math/rand"
-)
-
 type RandomFieldProvider interface {
 	newBool() bool
 	newInt32() int32
