@@ -29,7 +29,7 @@ func AllFieldTypesFromProtos(rootPath string, definition *proto.Proto) (*FieldTy
 		if isSkippableProto(o) {
 			continue;
 		}
-		d, err := protofiles.Read(fmt.Sprintf(rootPath, o.Filename))
+		d, err := protofiles.Read(fmt.Sprintf("%s/%s", rootPath, o.Filename))
 		if err != nil {
 			// Don't die.  Attempt to process the rest of the files.
 			continue

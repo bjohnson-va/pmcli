@@ -21,9 +21,10 @@ type HTTPHandler struct {
 
 
 func FromProtofile(allowedOrigin string, rootPath string, protofilename string, config interface{}) ([]HTTPHandler, error) {
-	definition, err := protofiles.Read(fmt.Sprintf(rootPath, protofilename))
+
+	definition, err := protofiles.Read(fmt.Sprintf("%s/%s", rootPath, protofilename))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to read protofile: %s", err.Error())
 	}
 
 	var handlers []HTTPHandler
@@ -31,10 +32,11 @@ func FromProtofile(allowedOrigin string, rootPath string, protofilename string, 
 	pakkage := *parse.Package(definition.Elements)
 	t, err := parse.AllFieldTypesFromProtos(rootPath, definition)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to extract types: %s", err.Error())
 	}
 
 	srv := parse.Services(definition.Elements)
+
 	for _, s := range srv {
 		rpcs := parse.RPCs(s.Elements)
 		for _, r := range rpcs {

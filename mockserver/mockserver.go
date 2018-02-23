@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net"
 	"os"
 	"github.com/bjohnson-va/pmcli/handlers"
 	"github.com/fsnotify/fsnotify"
@@ -132,7 +131,6 @@ func buildServerMux(ctx context.Context, d serverDetails, config interface{}) (
 
 	mux := http.NewServeMux()
 	for _, p := range d.protofileNames {
-		logging.Infof(ctx, "Building endpoints for: %s/%s", d.rootDir, p)
 		h, err := handlers.FromProtofile(d.allowedOrigin, d.rootDir, p, config)
 		if err != nil {
 			return nil, fmt.Errorf("failed to make handlers: %s", err.Error())
@@ -144,28 +142,4 @@ func buildServerMux(ctx context.Context, d serverDetails, config interface{}) (
 		}
 	}
 	return mux, nil
-}
-
-func runServer(port int, mux *http.ServeMux) error {
-	httpSrv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
-	}
-	lis, err := buildListener(port)
-	if err != nil {
-		return fmt.Errorf("unable to prepare net.listener: %s", err.Error())
-	}
-	err = httpSrv.Serve(*lis)
-	if err != nil {
-		return fmt.Errorf("unable to start HTTP server %s", err.Error())
-	}
-	return nil
-}
-
-func buildListener(port int) (*net.Listener, error) {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		return nil, err
-	}
-	return &lis, nil
 }
