@@ -9,10 +9,11 @@ import (
 var debug bool
 
 var RootCmd = &cobra.Command{
-	Use:   "mscli",
-	Short: "mscli helps manage Vendasta microservices.",
-	Long: `mscli helps manage Vendasta microservices.
-This includes both bootstrapping new projects as well as updating and maintaining existing projects.`,
+	Use:   "pmcli",
+	Short: "pmcli provides mocking utilities based on protofiles",
+	Long: `pmcli provides mocking utilities based on protofiles.
+This is primarily focused around starting a mock server which serves random or 
+configured values`,
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
