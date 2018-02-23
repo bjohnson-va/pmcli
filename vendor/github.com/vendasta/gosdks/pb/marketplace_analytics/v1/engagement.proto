@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package marketplaceanalytics.v1;
+
+import "google/protobuf/timestamp.proto";
+
+
+message PartnerEngagement {
+
+  // The id of the partner
+  string partner_id = 1;
+  // The id of the app
+  string app_id = 2;
+  // The name of the partner
+  string partner_name = 3;
+  // The date a partner enabled the vendor app
+  google.protobuf.Timestamp enabled_on = 4; 
+  // True if a partner has the vendor app in at least one published package
+  bool selling = 5;
+  // The amount of times a product has been viewed in business center and marketplace public store, 
+  int64 total_store_views = 6;
+  // The number of times a user has clicked the call to action in business center and the marketplace public store 
+  int64 total_store_call_to_action_events = 7;
+  // The total number of times a vendor app has been activated
+  int64 total_activations = 8;
+  // The total number of times a vendor app has been deactivated
+  int64 total_deactivations = 9;
+  //The time the engagement entry was created
+  google.protobuf.Timestamp created = 10;
+  // The account executive email for a given date
+  string sales_contact_email = 11;
+  // The total number of times a partner viewed an app
+  int64 total_partner_views = 12;
+}

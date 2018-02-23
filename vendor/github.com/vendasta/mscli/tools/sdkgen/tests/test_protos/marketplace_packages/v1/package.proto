@@ -1,0 +1,136 @@
+syntax = "proto3";
+
+package marketplace_packages.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message Package {
+    // Created time
+    google.protobuf.Timestamp created = 1;
+
+    // Updated time
+    google.protobuf.Timestamp updated = 2;
+
+    // Archived time
+    google.protobuf.Timestamp archived = 3;
+
+    // User that last updated the package
+    string updated_by = 4;
+
+    // Unique id for the package
+    string package_id = 5;
+
+    // Partner Id for package
+    string partner_id = 6;
+
+    // Market Id for the package
+    string market_id = 7;
+
+    // Package name
+    string name = 8;
+
+    // Icon for the package
+    string icon = 9;
+
+    // Status for the package
+    Statuses.Status status = 10;
+
+    // URL for the header image
+    string header_image_url = 11;
+
+    // The slogan for the package
+    string tagline = 12;
+
+    // What is in the package
+    string content = 13;
+
+    // Product ids for a package
+    repeated string products = 14;
+
+    // Hide details of the products in the package
+    bool hide_product_details = 15;
+
+    // Hide product icons and names
+    bool hide_product_icons_and_names = 16;
+
+    // Pricing of the package
+    Pricing pricing = 17;
+
+    // Price for the year
+    int64 normalized_annual_price = 18;
+
+    // Addon ids for a package
+    repeated AddonKey addon_keys = 19;
+
+}
+
+message AddonKey {
+    // The parent app for the addon
+    string app_id = 1;
+
+    // The addon id
+    string addon_id = 2;
+}
+
+message Pricing {
+    // Currency of the pricing
+    Currencies.Currency currency = 1;
+
+    // Prices of the package
+    repeated Price prices = 2;
+}
+
+message Price {
+    // Price of the product
+    int32 price = 1;
+
+    // Billing frequency of the product
+    Frequencies.Frequency frequency = 2;
+}
+
+message Statuses {
+    enum Status {
+        DRAFT = 0;
+        PUBLISHED = 1;
+        ARCHIVED = 2;
+    }
+}
+
+message Currencies {
+    enum Currency{
+        USD = 0;
+        AUD = 1;
+        BRL = 2;
+        CAD = 3;
+        CHF = 4;
+        CNY = 5;
+        CZK = 6;
+        EUR = 7;
+        GBP = 8;
+        HKD = 9;
+        INR = 10;
+        JPY = 11;
+        KHR = 12;
+        KRW = 13;
+        MXN = 14;
+        NOK = 15;
+        NZD = 16;
+        RUB = 17;
+        SEK = 18;
+        SGD = 19;
+        TRY = 20;
+        ZAR = 21;
+    }
+}
+
+message Frequencies {
+    enum Frequency{
+        MONTHLY = 0;
+        DAILY = 1;
+        ONCE = 2;
+        YEARLY = 3;
+        WEEKLY = 4;
+        OTHER = 5;
+    }
+
+}

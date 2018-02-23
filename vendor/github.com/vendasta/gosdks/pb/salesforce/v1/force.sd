@@ -1,0 +1,12 @@
+title Salesforce Integration
+
+Client->Salesforce: CreateIntegration(CreateRequest): Create an new Integration for partner "ABC", market "default" with the following details: ....
+Salesforce->Client: CreateRequest: Cool, here is a GUID for you.
+Client->Salesforce: GetIntegration(GetRequest): Get the details about the integration for partner "ABC", market "default"
+Salesforce->Client: Integration: Full details including tokens for the specified integration
+Client->Salesforce: ListIntegrations(Empty): List all integrations (Implied)
+Salesforce->Client: ListResponse: A summary (no tokens included) for each integration configured.
+Client->Salesforce: UpdateAccessToken(UpdateAccessTokenRequest): Here is a new access token for partner "ABC", market "default"
+Salesforce->Client: Empty: Success is implied
+Client->Salesforce: DeleteIntegration(DeleteRequest): Delete an existing Integration for partner "ABC", market "default"
+Salesforce->Client: Empty: Success is implied

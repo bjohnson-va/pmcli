@@ -1,0 +1,49 @@
+// version: 1.0.0
+
+syntax = "proto3";
+
+package datariver;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// based on Review VObject
+message Review {
+	string review_id = 1;
+	string listing_id = 2;
+	string url = 3;
+
+	float star_rating = 4;
+	string reviewer_name = 5;
+	string reviewer_email = 6;
+	string reviewer_url = 7;
+	string content = 8;
+	google.protobuf.Timestamp published_date = 9;
+	string title = 10;
+}
+
+message GetReviewRequest {
+	string review_id = 1;
+}
+
+message DeleteReviewRequest {
+	string review_id = 1;
+}
+
+message ListReviewsRequest {
+    string listing_id = 1;
+    string listing_external_id = 2;
+    int64 offset = 3;
+    int64 page_size = 4;
+}
+
+message ListReviewsResponse {
+	repeated Review reviews = 1;
+}
+
+service ReviewService {
+	rpc Put(Review) returns (Review);
+	rpc Get(GetReviewRequest) returns (Review);
+	rpc Delete(DeleteReviewRequest) returns (google.protobuf.Empty);
+	rpc List(ListReviewsRequest) returns (ListReviewsResponse);
+}

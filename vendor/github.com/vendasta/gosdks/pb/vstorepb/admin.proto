@@ -1,0 +1,171 @@
+syntax = "proto3";
+
+package vstorepb;
+import "google/protobuf/empty.proto";
+import "vstorepb/secondary_index.proto";
+
+message CreateNamespaceRequest {
+    // Unique namespace id unique to your project/microservice. Must be in lower snake case format.
+    // Example(s): repcore, partner-central, central-identity-service, marketing-automation.
+    string namespace = 1;
+
+    // List of service account ids that are authorized to access the data in this namespace.
+    repeated string authorized_service_accounts = 2;
+}
+
+message UpdateNamespaceRequest {
+    // Id of an existing namespace.
+    string namespace = 1;
+
+    // List of service account ids that are authorized to access the data in this namespace.
+    // Replaces the list of authorized service accounts that are currently on the namespace.
+    repeated string authorized_service_accounts = 2;
+}
+
+message DeleteNamespaceRequest {
+    // Id of an existing namespace.
+    string namespace = 1;
+}
+
+message CreateKindRequest {
+
+    // Id of an existing namespace
+    string namespace = 1;
+
+    // Unique name of the kind that are creating. Must be in capital camel case format.
+    // Example(s): AccountGroup, Partner, Review, Listing.
+    string kind = 2;
+
+    // List of fields that compose of the primary key. The order is important as it is used for building keysets,
+    // as well as lookups can be done by the leading pieces of a keyset.
+    repeated string primary_key = 3;
+
+    // Schema for the kind. Indexing of any entities into this namespace/kind requires that a type has been set
+    // for every field being indexed.  No inference is done and explicit types are required. Fields also are not
+    // able to have their types changed or deleted, and only additive changes are allowed once a kind has been created.
+    repeated Property properties = 4;
+
+    // Configured set of secondary indexes that you would like vStore to replicate to.
+    repeated SecondaryIndex secondary_indexes = 5;
+
+    // Backup configuration
+    BackupConfig backup_config = 6;
+
+    // Allows longer keys, but restricts Secondary Index options (CloudSQL)
+    bool extended_key_length = 7;
+}
+
+message UpdateKindRequest {
+
+    // Id of an existing namespace
+    string namespace = 1;
+
+    // Id of an existing kind
+    string kind = 2;
+
+    // Schema for the kind with any new fields included in the request. Changes to any existing fields will cause
+    // the request to fail.
+    repeated Property properties = 3;
+
+    // Configured set of secondary indexes that you would like vStore to replicate to.
+    repeated SecondaryIndex secondary_indexes = 5;
+
+    // Allows longer keys, but restricts Secondary Index options (CloudSQL)
+    bool extended_key_length = 6;
+}
+
+message GetKindRequest {
+    // Id of an existing namespace
+    string namespace = 1;
+
+    // Id of an existing kind
+    string kind = 2;
+}
+
+message GetKindResponse {
+    // List of fields that compose of the primary key. The order is important as it is used for building keysets,
+    // as well as lookups can be done by the leading pieces of a keyset.
+    repeated string primary_key = 1;
+    // Schema for the kind. Indexing of any entities into this namespace/kind requires that a type has been set
+    // for every field being indexed.  No inference is done and explicit types are required. Fields also are not
+    // able to have their types changed or deleted, and only additive changes are allowed once a kind has been created.
+    repeated Property properties = 2;
+    // Configured set of secondary indexes VStore is replicating to.
+    repeated SecondaryIndex secondary_indexes = 3;
+    // Backup configuration
+    BackupConfig backup_config = 4;
+    // Allows longer keys, but restricts Secondary Index options (CloudSQL)
+    bool extended_key_length = 5;
+}
+
+message DeleteKindRequest {
+
+    // Id of an existing namespace
+    string namespace = 1;
+
+    // Id of an existing kind
+    string kind = 2;
+
+}
+
+message BackupConfig {
+    enum BackupFrequency {
+        WEEKLY = 0;
+        DAILY = 1;
+        MONTHLY = 2;
+    }
+    BackupFrequency frequency = 1;
+}
+
+message Property {
+    // Unique identifier for this property. Must be in snake case format.
+    // Example(s): account_group_id, listing_id, company_name
+    string name = 1;
+
+    enum Type {
+        STRING = 0;
+        INT64 = 1;
+        DOUBLE = 2;
+        BOOL = 3;
+        TIMESTAMP = 4;
+        GEOPOINT = 5;
+        STRUCT = 6;
+        BYTES = 7;
+    }
+    // Type for this property
+    Type type = 2;
+
+    // Indicates if the field is repeated.
+    bool repeated = 3;
+
+    // Indicates if the field is required. Only validates that the field has been supplied in create/update requests,
+    // and not the actual value.
+    // Example(s):
+    // 1) A required string field would allow an empty string if the field was passed, but would fail if the field
+    // was not present in the request.
+    // 2) A required int property would allow 0 as a value, but would fail if the field was not supplied in the request.
+    bool required = 4;
+
+    // Can only be specified if the Type supplied is a STRUCT.
+    // Is the schema of the structured property.
+    repeated Property properties = 5;
+
+    map<string, SecondaryIndexPropertyConfig> secondary_index_configs = 6;
+}
+
+service VStoreAdmin {
+    rpc CreateNamespace (CreateNamespaceRequest) returns (google.protobuf.Empty) {
+    };
+    rpc UpdateNamespace (UpdateNamespaceRequest) returns (google.protobuf.Empty) {
+    };
+    rpc DeleteNamespace (DeleteNamespaceRequest) returns (google.protobuf.Empty) {
+    };
+    rpc CreateKind (CreateKindRequest) returns (google.protobuf.Empty) {
+    };
+    rpc UpdateKind (UpdateKindRequest) returns (google.protobuf.Empty) {
+    };
+    rpc GetKind (GetKindRequest) returns (GetKindResponse) {
+    };
+    rpc DeleteKind (DeleteKindRequest) returns (google.protobuf.Empty) {
+    };
+}

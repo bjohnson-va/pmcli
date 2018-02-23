@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package salesforce.v1;
+
+// Salesforce Account sObject
+message Account { 
+    // The Salesforced ID
+    string id = 1;
+    // The Account Name or business name
+    string name = 2;
+    // True for deleted Accounts
+    bool is_deleted = 3;
+    // Billing Address: Street Address
+    string billing_street = 4;
+    // Billing Address: City
+    string billing_city = 5;
+    // Billing Address: State
+    string billing_state = 6;
+    // Billing Address: Country
+    string billing_country = 7;
+    // Billing Address: Postal Code or Zip
+    string billing_postal_code = 8;
+    // Billing Address: Latitude
+    string billing_latitude = 9;
+    // Billing Address: Longitude
+    string billing_longitude = 10;
+    // Shipping Address: Street Address
+    string shipping_street = 11;
+    // Shipping Address: City
+    string shipping_city = 12;
+    // Shipping Address: State
+    string shipping_state = 13;
+    // Shipping Address: Country
+    string shipping_country = 14;
+    // Shipping Address: Postal Code or Zip
+    string shipping_postal_code = 15;
+    // Shipping Address: Latitude 
+    double shipping_latitude = 16;
+    // Shipping Address: Longitude
+    double shipping_longitude = 17;
+    // Phone Number
+    string phone = 18;
+    // Website
+    string website = 19;
+    // Account Type
+    string type = 20;
+    // Account Owner
+    string owner_id = 21;
+    // Account Number
+    string number = 22;
+    // Industry
+    string industry = 23;
+    // Description
+    string description = 24;
+}
+
+// A stream event from Salesforce essentially is a CRUD operation on a sObject
+message SalesforceStreamEvent {
+    // Events that can occur on sObjects
+    enum EventType {
+        // A sObject was created 
+        CREATE = 0;
+        // A sObject was updated
+        UPDATE = 1;
+        // A sObject was deleted
+        DELETE = 2;
+    }
+
+    // The type of event that occured
+    EventType event_type = 1;
+    // The event sObject associated with the event
+    oneof sobjects_oneof {
+        Account account = 2;
+    }
+    // Partner ID of the salesforce integration this is associated with
+    string partner_id = 3;
+    // Market ID of the salesforce integration this is associated with
+    string market_id = 4;
+    // Integration ID of the salesforce integration this is associated with
+    string integration_id = 5;
+}

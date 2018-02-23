@@ -1,0 +1,171 @@
+syntax = "proto3";
+
+package group.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+message ForeignKeys {
+    // The id of the partner that owns the group
+    string partner_id = 1;
+    // The id of the market that owns the group
+    string market_id = 2;
+}
+
+message Path {
+    // A list of nodes in the path
+    repeated string nodes = 1;
+}
+
+message PagedResponseMetadata {
+    // A cursor that can be provided to retrieve the next page of results
+    string next_cursor = 1;
+    // Whether or not more results exist
+    bool has_more = 2;
+}
+
+message PagedRequestOptions {
+    // cursor can be passed to retrieve the next page of results keyed by the cursor
+    string cursor = 1;
+    // page_size specifies the number of items to return in the next page
+    int64 page_size = 2;
+}
+
+message Group {
+    // Group identifier
+    string group_id = 1;
+    // Foreign keys which relate to this group
+    ForeignKeys foreign_keys = 2;
+    // The path to this specific group
+    Path path = 3;
+    // The name of the group
+    string name = 4;
+    // The type of the members. A group must consist of the same type of members. A member type could be something
+    // like account group, user or salesperson.
+    string member_type = 5;
+    // The group's created time
+    google.protobuf.Timestamp created = 7;
+    // The groups updated time
+    google.protobuf.Timestamp updated = 8;
+    // The namespace of this group
+    string namespace = 9;
+    // The current membership version of this group
+    int64 membership_version = 10;
+}
+
+message CreateRequest {
+    // Foreign keys which relate to this group
+    ForeignKeys foreign_keys = 1;
+    // The name of the group
+    string name = 2;
+    // The path to the node where the group should be created.
+    Path path = 3;
+    // The type of members this group will store.
+    string member_type = 4;
+    // The namespace this group is scoped to
+    string namespace = 5;
+}
+
+message CreateResponse {
+    // The id of the group which was created
+    string group_id = 1;
+    // The path to the group which was created
+    Path path = 2;
+}
+
+message AddMembersRequest {
+    // The path to a group where the members should be added
+    Path path = 1;
+    // The members to add
+    repeated string members = 2;
+}
+
+message RemoveMembersRequest {
+    // The path to a group where the members should be removed
+    Path path = 1;
+    // The members to remove
+    repeated string members = 2;
+}
+
+message ListMembersRequest {
+    // The path to the node
+    Path path = 1;
+    // Options for how to page the response for this request
+    PagedRequestOptions paging_options = 2;
+}
+
+message ListMembersResponse {
+    // All the members in the group and its descendants
+    repeated string members = 1;
+    // The total members in this group
+    int64 total_members = 2;
+    // Metadata about the paging
+    PagedResponseMetadata paging_metadata = 3;
+}
+
+message ListRequest {
+    message Filters {
+        // Filter the groups to the types of values they store
+        string member_type = 1;
+        // Filter the groups by a specific namespace
+        string namespace = 2;
+    }
+
+    // Foreign keys which relate to this group
+    ForeignKeys foreign_keys = 1;
+    // The path to the group. If no path is provided a list of the root groups will be returned.
+    Path path = 2;
+    // Filter the list of groups
+    Filters filters = 3;
+    // Options for how to page the response for this request
+    PagedRequestOptions paging_options = 4;
+}
+
+message ListResponse {
+    // Metadata about the paging
+    PagedResponseMetadata paging_metadata = 1;
+    // A list of groups
+    repeated Group groups = 2;
+}
+
+message DeleteGroupRequest {
+    // A path to the group to delete
+    Path path = 1;
+}
+
+message UpdateRequest {
+    // Path to the group to update
+    Path path = 1;
+    // Name the new name of the group
+    string name = 2;
+}
+
+message GetMultiRequest {
+    repeated Path path = 1;
+}
+
+message GetMultiResponse {
+    message GroupContainer {
+        Group group = 1;
+    }
+    repeated GroupContainer groups = 1;
+}
+
+service GroupService {
+    // Create a new group
+    rpc Create(CreateRequest) returns (CreateResponse) {}
+    // Add members to a specific group
+    rpc AddMembers(AddMembersRequest) returns (google.protobuf.Empty) {}
+    // Remove members to a specific group
+    rpc RemoveMembers(RemoveMembersRequest) returns (google.protobuf.Empty) {}
+    // ListMembers all the values in a group, and it's children as a flat list
+    rpc ListMembers(ListMembersRequest) returns (ListMembersResponse) {}
+    // List all the child groups for a given path
+    rpc List(ListRequest) returns (ListResponse) {}
+    // Update a group
+    rpc Update(UpdateRequest) returns (google.protobuf.Empty) {}
+    // Delete a group
+    rpc Delete(DeleteGroupRequest) returns (google.protobuf.Empty) {}
+    // GetMulti groups
+    rpc GetMulti(GetMultiRequest) returns (GetMultiResponse) {}
+}

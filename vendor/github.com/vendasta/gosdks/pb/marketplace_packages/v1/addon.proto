@@ -1,0 +1,118 @@
+syntax = "proto3";
+
+package marketplace_packages.v1;
+
+import "google/protobuf/timestamp.proto";
+import "marketplace_packages/v1/product.proto";
+import "marketplace_packages/v1/restrictions.proto";
+
+// Marketing information about the addon
+message MarketingInformation {
+    // Reseller marketing information: description
+    string description = 1;
+    // Reseller marketing information: key selling points
+    repeated string key_selling_points = 2;
+    // Reseller marketing information: faqs
+    repeated FrequentlyAskedQuestions faqs = 3;
+    // Reseller marketing information: pdf upload
+    repeated string files = 4;
+}
+
+// Field asking user for information when they try to activate the app
+message OrderFormField {
+    reserved 5;
+    string label = 1;
+    string id  = 2;
+    string type = 3;
+    repeated string options = 4;
+    string description = 6;
+    bool required = 7;
+}
+
+// Common form fields among apps, can be autofilled
+message IncludedCommonFormFields {
+    bool business_name = 1;
+    bool business_address = 2;
+    bool business_phone_number = 3;
+    bool business_account_group_id = 4;
+    bool salesperson_name = 5;
+    bool salesperson_phone_number = 6;
+    bool salesperson_email = 7;
+    bool contact_name = 8;
+    bool contact_phone_number = 9;
+    bool contact_email = 10;
+}
+
+// Order form fields
+message OrderForm {
+    // Order form: fields in the order form
+    repeated OrderFormField order_form = 1;
+    // Order form: common form fields
+    IncludedCommonFormFields common_form = 2;
+    // Order form: message shown to users upon activating the app
+    string activation_message = 3;
+}
+
+// Addon is a item that can be purchased to enable additional features within a marketplace app.
+// These can be either Consumables, Non-Consumables or Subscriptions.
+message Addon {
+    // The id of the addon, unique within the scope of the app the addon is for
+    string addon_id = 1;
+
+    // The id of the app which the addon is for
+    string app_id = 2;
+
+    // A tagline for an addon
+    string tagline = 3;
+
+    // The title of the addon
+    string title = 4;
+
+    // Is the addon approved to be shown publicly within marketplace
+    bool approved = 5;
+
+    // Icon url for the addon
+    string icon = 6;
+
+    // The banner image of an addon
+    string banner_image = 7;
+
+    // End user marketing information
+    MarketingInformation end_user_marketing = 8;
+
+    // Addon service_model
+    repeated string service_model = 9;
+
+    // Is the addon discoverable within marketplace
+    bool discoverable = 10;
+
+    // A list of screenshots for an addon
+    repeated string screenshots = 11;
+
+    // Can the addon support multiple activations
+    bool multiple_activations = 12;
+
+    // Indicates if the addon uses an order form during activation
+    bool uses_order_form = 13;
+
+    // Addon billing_frequency
+    string billing_frequency = 14;
+
+    // Reseller marketing information
+    MarketingInformation reseller_marketing = 15;
+
+    // A timestamp of when the addon was created
+    google.protobuf.Timestamp created = 16;
+
+    // A timestamp of when the addon was last updated
+    google.protobuf.Timestamp updated = 17;
+
+    // Order form fields
+    OrderForm order_form = 18;
+
+    // The wholesale price of the addon, in cents, the currency is inherited from the base product
+    int64 price = 19;
+
+    // List of restrictions for the addon
+    Restrictions restrictions = 20;
+}

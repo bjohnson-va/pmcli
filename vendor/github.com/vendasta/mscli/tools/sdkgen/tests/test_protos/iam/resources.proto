@@ -1,0 +1,180 @@
+syntax = "proto3";
+
+package iam.v1;
+
+import "subjects.proto";
+import "google/protobuf/empty.proto";
+
+//ResourceOwner is an application that owns one or many distinct resources.
+message ResourceOwner {
+    //app_id is a unique identifier for the registrant. It must be unique across all IAM resource owners. (eg "VBC")
+    string app_id = 1;
+
+    //app_name is the human readable name of the application registering as a Resource Owner (eg "Vendasta Business Center")
+    string app_name = 2;
+}
+
+//RegisterResourceRequest is issued by a ResourceOwner to tell IAM that they would like to expose a resource that IAM will control access to.
+message RegisterResourceRequest {
+    //app_id is a unique identifier for the ResourceOwner. It must be unique across all IAM resource owners. (eg "VBC")
+    string app_id = 1;
+
+    //resource_id is an identifier for the resource that is unique within the resource owner's set of resources.
+    string resource_id = 2;
+
+    //resource_name is the human readable name of the resource (eg "Account Group")
+    string resource_name = 3;
+
+    //resource_owner_service_url is the base url where a ResourceOwner grpc service is being served. IAM will use this service to ask about specific resources
+    string resource_owner_service_url = 4;
+
+    //required_resource_params is the set of identifiers that must be provided to ask the resource provider about a resource from
+    //IAM's point of view. These parameters will need to be supplied by any client asking about this resource.
+    //eg: ["pid", "account_group_id"] means that each time IAM asks for one of these resources, it will require the client to specify
+    //which "pid" and "account_group_id" they are asking about. IAM will proxy these parameters to the resource_owner_service_url.
+    repeated string required_resource_params = 5;
+
+    //resource_owner_audience is a google id token audience. This is used by the resource owner to validate requests.
+    string resource_owner_audience = 6;
+}
+
+//RegisterResourceOwnerRequest is issued by a prospective ResourceOwner to tell IAM they intend to expose resources that IAM will control access to.
+message RegisterResourceOwnerRequest {
+    //owner is the definition of a resource owner
+    ResourceOwner owner = 1;
+}
+
+//AccessScope represents the spectrum of intents that a resource may be accessed with. Different intents may entail the evaluation
+//of different policies, as policies are associated not only to resources, but to specific AccessScope within the scope of that resource.
+enum AccessScope {
+    READ = 0;
+    WRITE = 1;
+    DELETE = 2;
+    LIST = 3;
+}
+
+//RegisterPolicyRequest registers a policy with a resource in IAM.
+message RegisterPolicyRequest {
+    Policy policy = 1;
+}
+
+//SubjectResourceIntersectionClause is true if the set of values keyed by attribute_name on the resource has a non-empty intersection with the set of values keyed by attribute_name on the subject.
+//eg: with attribute_name = "account_group_id" then the subject MUST have an attribute named "account_group_id"
+//that contains any individual value of the resource's "account_group_id" attribute for this clause to be considered TRUE.
+message SubjectResourceIntersectionClause {
+    string attribute_name = 1;
+}
+
+//SubjectResourceSubsetClause is true if the set of values keyed by attribute_name on the resource is a subset of the set of values keyed by attribute_name on the subject.
+message SubjectResourceSubsetClause {
+    string attribute_name = 1;
+}
+
+//SubjectValueIntersectionClause describes how an attribute's value on the subject must contain the arbitrary value specified by attribute_value.
+//eg: with attribute_name = "subject_type" and attribute_value = "partner", then the subject MUST have an attribute named
+//"subject_type" that contains the value "partner". Note that this is different from SubjectResourceIntersectionClause because we don't
+//care about this attributes presence on the resource or its value, it is purely for enforcing constraints on the subject itself.
+message SubjectValueIntersectionClause {
+    string attribute_name = 1;
+    string attribute_value = 2;
+}
+
+//SubjectMissingValueClause is true if the subject attribute keyed by attribute_name is either missing or has no values.
+//eg: with attribute_name = "market_id", then a subject with "market_id" = [] is TRUE, a subject with "market_id" = ["something"] is FALSE,
+//and if the subject simply doesn't have an attribute called "market_id" then this clause is TRUE
+message SubjectMissingValueClause {
+    string attribute_name = 1;
+}
+
+//Boolean operator supports the basic boolean expressions AND, OR, NOT
+enum BooleanOperator {
+    AND = 0;
+    OR = 1;
+    NOT = 2;
+}
+
+//Operator consists of a boolean conjunction and one to two children nodes.
+//NOT is the only conjunction that supports a single child node, whereas AND and OR both require exactly two child nodes.
+message Operator {
+    BooleanOperator operator = 1;
+    repeated PolicyNode children = 2;
+}
+
+//A PolicyNode can either be a Boolean operator over one or more child PolicyNodes, or it can be an SubjectResourceIntersectionClause.
+//A policy tree might look like this where C1, C2, C3 are SubjectResourceIntersectionClauses:
+//          AND
+//         /   \
+//        C1   OR
+//            /  \
+//           C2  C3
+//This means that the expression would be evaluated as C1 && (C2 || C3)
+//Arbitrary nesting is valid.
+message PolicyNode {
+    //A policy node must either be a boolean conjunction of child clauses or an actual clause
+    oneof value {
+        
+        // Validates that the intersection between subjects and resources is not an empty set.
+        SubjectResourceIntersectionClause subject_resource_intersection = 1;
+        
+        // Allows conjuctions between many policy nodes (AND, OR, and NOT)
+        Operator operator = 2;
+        
+        // Validates that the subject has a specific value
+        SubjectValueIntersectionClause subject_value_intersection = 3;
+
+        // Validates that the subject has a specific missing value.
+        SubjectMissingValueClause subject_missing_value = 4;
+
+        // Validates that the resources attributes is a subset of the subjects attributes.
+        SubjectResourceSubsetClause subject_resource_subset = 5;
+    }
+}
+
+//A policy is a binary boolean expression tree of attribute-based clauses that determines whether a subject is authorized to access a resource in a specific context.
+message Policy {
+    //app_id is a unique identifier for the ResourceOwner. It must be unique across all IAM resource owners. (eg "VBC")
+    string app_id = 1;
+
+    //The unique identifier for the resource this policy will be applied to.
+    string resource_id = 2;
+
+    //The identifier for this policy. This need only be unique within the scope of the resource.
+    string policy_id = 3;
+
+    //policy_name is the human readable name of the policy, often phrased as a question (eg: "Can user access account group?")
+    string policy_name = 4;
+
+    //Operations that a user may take on a resource.
+    //In particular, these will be the operations that this policy is associated with, so if this policy is associated
+    //with "read", and a user attempts to "read" this resource type, this policy would be evaluated.
+    repeated AccessScope operations = 5;
+
+    //policy is the boolean expression tree of boolean operators and attribute-based clauses that expresses the method by which the policy is evaluated.
+    PolicyNode policy = 6;
+}
+
+//AccessResourceRequest asks IAM whether a subject has access to a resource
+message AccessResourceRequest {
+    Context context = 1;
+    oneof subject_identifier {
+        string subject_id = 2;
+        string email = 3;
+    }
+
+    //owner_id is the app_id of the ResourceOwner that owns the resource_id
+    string owner_id = 4;
+
+    //resource_id is the resource type that the subject wants to access
+    string resource_id = 5;
+
+    //resource_entity_identifier contains the information necessary to identify a specific resource of the type specified by resource_id
+    map<string, ValueList> resource_entity_identifier = 6;
+
+    //access_scope represents the reasons that the user wants to access the resource.
+    repeated AccessScope access_scope = 7;
+}
+
+//ValueList is a holder for multiple string values in order to be compatible with map declarations
+message ValueList {
+    repeated string values = 1;
+}

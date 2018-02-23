@@ -1,0 +1,17 @@
+title Bing Maps
+
+Core->+Datalake: Search
+alt bing search already run
+Datalake->+MemoryStore: Search
+MemoryStore-->-Datalake: Search Results
+else bing search has not run
+Datalake->+BingMapsService: Search For Listing
+BingMapsService->+BingMapsApi: Search For Listing
+BingMapsApi-->-BingMapsService: Search Results
+BingMapsService-->-Datalake: Search Results
+Datalake->+VStore: Save all listings
+VStore-->-Datalake: Saved Results
+note left of Datalake: update memorystore
+end
+Datalake-->-Core: Found Listings
+

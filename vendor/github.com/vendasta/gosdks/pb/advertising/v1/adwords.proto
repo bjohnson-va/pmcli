@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package advertising.v1;
+
+message GetAllAccountsRequest {
+  string business_id = 1;
+}
+
+message AdwordsAccountInfo {
+  // The Account's ID; i.e. CID
+  int64 customer_id = 1;
+  // Display name for the account
+  string name = 2;
+  // Is this a manager account (i.e. MCC)?
+  bool is_manager = 3;
+  // Is this a test account?
+  bool is_test_account = 4;
+  // The ISO 4217 currency code of the account
+  string currency_code = 5;
+  // Local timezone of this account (see https://developers.google.com/adwords/api/docs/appendix/codes-formats#timezone-ids)
+  string timezone = 6;
+}
+
+message GetAllAccountsResponse {
+  repeated AdwordsAccountInfo accounts = 1;
+}
+
+// Get stats from the AdWords API's "Account Performance" endpoint
+message GetStatsForBusinessRequest {
+  string business_id = 1;
+}
+
+// Stats from the AdWords API's "Account Performance" endpoint
+message GetStatsForBusinessResponse {
+  int64 clicks = 1;
+  int64 cost_microdollars = 2;
+  int64 impressions = 3;
+  // AdWords campaigns/accounts, when built, are set up to optimize certain types of
+  // conversions.  This is the metric of how many of those type of conversions
+  // were achieved by the campaign.
+  double conversions = 4;
+  // See conversions.  This is the metric of how many conversions were achived
+  // on the campaign from the set of ALL conversions supported by AdWords.
+  double all_conversions = 5;
+}
+
+message StoreCredentialsForBusinessRequest {
+  // The business to connect
+  string business_id = 1;
+
+  // An OAuth *Refresh* token for the business authorized against the advertising provider
+  string oauth_refresh_token = 2;
+}
+
+message GetAccountInfoRequest {
+  // The business to get advertising account info about
+  string business_id = 1;
+}
+
+// An Adwords Account description
+message Account {
+  // The Account's ID; i.e. CID
+  int64 customer_id = 1;
+  // Display name for the account
+  string name = 2;
+  // Is this a manager account (i.e. MCC)?
+  bool is_manager = 3;
+  // Is this a test account?
+  bool is_test_account = 4;
+  // The ISO 4217 currency code of the account
+  string currency_code = 5;
+  // List of timezones here: https://developers.google.com/adwords/api/docs/appendix/codes-formats#timezone-ids
+  string time_zone = 6;
+}
+
+message GetAccountInfoResponse {
+  // Info about an adwords account
+  Account account_info = 1;
+}

@@ -1,0 +1,6 @@
+title TokenExchange
+
+PartnerApp->IAM: GetSessionTokenRequest: Here is a JWT token for my service account "partner-app@service-account.vendasta.com" signed by me
+note left of IAM: Look up subject for "partner-app@service-account.vendasta.com", decode JWT using key registered for that subject
+note left of IAM: On successfully decoding their JWT, create them a session and a IAM-signed JWT for that session
+IAM-->PartnerApp: GetTokenResponse: Here is a JWT token signed by me, you can use this to call my APIs until it expires

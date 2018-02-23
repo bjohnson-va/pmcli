@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package partner.v1;
+
+// URL stores both secure/insecure versions of a URL
+message URL {
+    string secure = 1;
+    string insecure = 2;
+}
+
+// Branding contains the major visual data for a branded partner/market context
+message Branding {
+    enum UITheme {
+        Dark = 0;
+        Light = 1;
+    }
+
+    message Assets {
+        // Favicon is the small icon that will appear in browser tabs
+        URL favicon_url = 1;
+        // Shortut Icon is a mid-size icon that will appear in other browsing contexts, such as when the page is added to homescreen
+        URL shortcut_icon_url = 3;
+        // Logo is the image that will be used to brand the platform within pages
+        URL logo_url = 2;
+    }
+
+    message App {
+        // The whitelabeled name of the application
+        string name = 2;
+    }
+
+    // Major theme of the UI -- Dark/Light
+    UITheme ui_theme = 1;
+    // Primary Color
+    string primary_color = 2;
+    // Assets such as logos and icons
+    Assets assets = 3;
+    // Application branding information
+    map<string, App> apps = 4;
+}
+
+
+message GetBrandingRequest {
+    string partner_id = 1;
+    string market_id = 2;
+}
+
+message GetBrandingResponse {
+    Branding branding = 1;
+}
+
+service Whitelabel {
+    // Gets the branding for a partner/market brand context
+    rpc GetBranding(GetBrandingRequest) returns (GetBrandingResponse) {}
+}
+

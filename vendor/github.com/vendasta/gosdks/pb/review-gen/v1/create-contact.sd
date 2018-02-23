@@ -1,0 +1,15 @@
+title CreateContact
+
+participant "CRM µService" as crm
+participant "Business Center" as vbc
+participant "Reputation" as rm
+participant "IAM" as iam
+
+crm->iam: Does the user associated with this Token have access to the specified Account?
+iam->crm: yup
+crm->vbc: Create this Contact
+vbc->crm: Here is the contact I created (with ID)
+crm->rm: Send an email to this contact w/ ID (if requestReviewByEmail)
+rm->crm: ok
+crm->rm: Future: Send an SMS to this contact w/ ID (if requestReviewBySMS)
+rm->crm: ok

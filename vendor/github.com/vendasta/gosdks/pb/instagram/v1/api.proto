@@ -1,0 +1,103 @@
+syntax = "proto3";
+
+package instagram.v1;
+
+import "google/protobuf/empty.proto";
+import "user.proto";
+
+// Options for how to page the response for a List request
+message PagedRequestOptions {
+    // cursor can be passed to retrieve the next page of results keyed by the cursor
+    string cursor = 1;
+    // page_size specifies the number of items to return in the next page
+    int64 page_size = 2;
+}
+
+// Metadata related to the paged response from a List request
+message PagedResponseMetadata {
+    // A cursor that can be provided to retrieve the next page of results
+    string next_cursor = 1;
+    // Whether or not more results exist
+    bool has_more = 2;
+}
+
+// Create an instagram User
+message CreateUserRequest {
+    // A partner id
+    string partner_id = 1;
+    // An account group id
+    string account_group_id = 2;
+    // A unique ID for an instagram user
+    string instagram_user_id = 3;
+    // A name for an instagram user
+    string username = 4;
+    // A URL to a profile picture
+    string profile_picture = 5;
+    // A full name for this instagram user
+    string full_name = 6;
+    // The bio set by the user in instagram
+    string bio = 7;
+    // A link to the user's website
+    string website = 8;
+    // Whether or not this account is a business
+    bool is_business = 9;
+    // The access token for this user
+    string access_token = 10;
+}
+
+// List instagram Users by account group
+message ListUsersRequest {
+    // A partner id
+    string partner_id = 1;
+    // An account group id
+    string account_group_id = 2;
+    // Options for how to page the response for this request
+    PagedRequestOptions options = 3;
+}
+
+
+// ListUsers returns a list of instagram Users, ordered alphabetically by name
+message ListUsersResponse {
+    // A list of instagram Users, ordered alphabetically by name
+    repeated User users = 1;
+    // Metadata about the paged response
+    PagedResponseMetadata paging_metadata = 2;
+}
+
+// Get an instagram User by id
+message GetUserRequest {
+    // A partner id
+    string partner_id = 1;
+    // An account group id
+    string account_group_id = 2;
+    // A unique internal identifier for an instagram User
+    string user_id = 3;
+}
+
+// GetUser returns an instagram User
+message GetUserResponse {
+    // An instagram User
+    User user = 1;
+}
+
+// Delete a user by id
+message DeleteUserRequest {
+    // A partner id
+    string partner_id = 1;
+    // An account group id
+    string account_group_id = 2;
+    // A unique internal identifier for an instagram User
+    string user_id = 3;
+}
+
+// Instagram is a service responsible for communication with the User table
+service Instagram {
+    // Create an instagram User
+    rpc CreateUser(CreateUserRequest) returns (google.protobuf.Empty){};
+    // List instagram Users for an account group
+    rpc ListUsers(ListUsersRequest) returns (ListUsersResponse){};
+    // Get an instagram User by id
+    rpc GetUser(GetUserRequest) returns (GetUserResponse){};
+    // Delete an instagram User by id
+    rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty){};
+}

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package content_bank.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// RssFeed is a url pointing to content
+message RssFeed {
+    // A unique id
+    string partner_id = 1;
+    // A unique id within the partner
+    string market_id = 2;
+    // URL of the feed
+    string feed_url = 3;
+    // Name of the RSS feed
+    string name = 4;
+    // The last date that feed was updated
+    google.protobuf.Timestamp updated_datetime = 5;
+}
+
+// An individual piece of content from an RSS feed
+message RssFeedItem {
+    // A unique id
+    string partner_id = 1;
+    // A unique id within the partner
+    string market_id = 2;
+    // URL of the item
+    string permalink = 3;
+    // URL of the parent feed
+    string feed_url = 4;
+    // Time the feed content was posted
+    google.protobuf.Timestamp posted_date = 5;
+    // Author of the item
+    string author = 6;
+    // Summary of the item
+    string summary = 7;
+    // Title of the item
+    string title = 8;
+    // The datetime a post was scheduled from this item
+    google.protobuf.Timestamp scheduled_datetime = 9;
+}

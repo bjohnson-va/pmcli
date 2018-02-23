@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package medicalcompare.v1;
+
+// An example of a provider is a hospital - providers describe the institution, 
+// not a singular person such as a doctor.
+message Provider {
+    // The provider's identifier
+    string provider_id = 1;
+    // The name of the provider
+    string name = 2;
+    // The address of the provider
+    string address = 3;
+    // The city of the provider
+    string city = 4;
+    // The state of the provider
+    string state = 5;
+    // The zip code of the provider
+    string zip_code = 6;
+    // The county name of the provider
+    string county_name = 7;
+}

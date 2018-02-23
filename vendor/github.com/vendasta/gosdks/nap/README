@@ -1,0 +1,41 @@
+# NAP
+- [Introduction](https://github.com/vendasta/gosdks/tree/master/nap#installation)
+- [Usage](https://github.com/vendasta/gosdks/tree/master/nap#usage)
+  - [Introduction](https://github.com/vendasta/gosdks/tree/master/nap#introduction)
+
+## Installation
+
+* YOLO development? `go get github.com/vendasta/gosdks`
+* Using [glide](https://github.com/Masterminds/glide) package manager? `glide get -s -v github.com/vendasta/gosdks`
+
+## Usage
+
+### Introduction
+
+```golang
+napClient, err := nap.NewClient(context.Background(), config.Prod)
+if err != nil {
+    logging.Errorf(ctx, "Error initializing NAP client %s", err.Error())
+    os.Exit(-1)
+}
+
+res, err := napClient.ParsePhoneNumber(
+    context.Background(),
+    "3065551234",
+    nap.DefaultRegion("CA"),
+    nap.Formats(nap.NATIONAL),
+)
+```
+
+### Validation Rules & Utilities
+
+```golang
+v := validation.NewValidator()
+
+v.Rule(nap.PhoneNumberValidationRule(napClient, ctx, number, opts, util.InvalidArgument, "Invalid Emergency Contact Number"))
+
+country := nap.GetCountryCodeFromCountryString(country)
+state := nap.GetStateCodeFromStateString(country, state)
+v.Rule(nap.CountryStateRule(napClient, ctx, country, state))
+
+```

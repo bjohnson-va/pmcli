@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package nap.v1;
+
+option java_multiple_files = true;
+option java_package = "com.vendasta.phonenumber.generated";
+
+import "phonenumber.proto";
+import "address.proto";
+
+// NAP Data Service provides utilities regarding NAP data -- providing standard data, validation, formatting, etc.
+service NAPDataService {
+    rpc ParsePhoneNumber(ParsePhoneNumberRequest) returns (ParsePhoneNumberResponse) {}
+    rpc ListCountries(ListCountriesRequest) returns (ListCountriesResponse) {}
+    rpc ListStates(ListStatesRequest) returns (ListStatesResponse) {}
+}

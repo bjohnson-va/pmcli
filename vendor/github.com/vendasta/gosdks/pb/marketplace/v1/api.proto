@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+package marketplace.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// GetOAuthTokenRequest
+message GetOAuthTokenRequest {
+    // Use the following string: 'urn:ietf:params:oauth:grant-type:jwt-bearer'.
+    string grant_type = 1;
+    // The JWT, including signature.
+    string assertion = 2;
+}
+
+// GetOAuthTokenResponse
+message GetOAuthTokenResponse {
+    // The token to use to authenticate all other API's with (set in the Authorization header).
+    string access_token = 1;
+    // The type of token returned.
+    string token_type = 2;
+    // A timestamp indicating when the access token is good until.
+    google.protobuf.Timestamp expires = 3;
+}
+
+// GetSessionTransferURLRequest
+message GetSessionTransferURLRequest {
+    // The Account ID.
+    string account_id = 1;
+}
+
+// GetSessionTransferURLResponse
+message GetSessionTransferURLResponse {
+    // The session transfer URL to send the user to (which may result in a redirect to a login screen).
+    string session_transfer_url = 1;
+}
+
+// CheckAccountPermissionRequest
+message CheckAccountPermissionRequest {
+    // The User ID.
+    string user_id = 1;
+    // The Account ID.
+    string account_id = 2;
+}
+
+message ListActiveAddonsRequest {
+    // The business id
+    string business_id = 1;
+}
+
+message AddonActivation {
+    // A prerequisite marketplace vendor's ID's of the addon activated.
+    string addon_id = 1;
+    // An ID assigned uniquely to this addon upon being activated.
+    string activation_id = 2;
+}
+
+message ListActiveAddonsResponse {
+    // The active addons for the specified business on the app.
+    repeated AddonActivation addons = 1;
+}
+
+message ListAssociatedUsersRequest {
+    // The business id
+    string business_id = 1;
+}
+
+message User {
+    // Primary identifier for the user
+    string user_id = 1;
+}
+
+message ListAssociatedUsersResponse {
+    // Users associated with the specified business and application
+    repeated User users = 1;
+}
+
+message GetSessionFromTokenRequest {
+    // The encrypted authorization token
+    string token = 1;
+}
+
+message Session {
+    // The App ID from the session information
+    string app_id = 1;
+    // The time that the token was first issued
+    google.protobuf.Timestamp issued = 2;
+    // The time that the token is valid until
+    google.protobuf.Timestamp expires = 3;
+}
+
+message GetSessionFromTokenResponse {
+    // The Session associated with the specified token
+    Session session = 1;
+}
+
+// Marketplace Service
+//
+// These RPC's are designed to mirror as closely as possible to the interface provided by the V1 marketplace API's. This
+// service is meant to replace those API's one by one (via a proxy) so that we can move all marketplace API integration 
+// traffic off of the developer central appengine project. V2 may introduce different terminology/naming, but the naming
+// of properties and RPC's in this version is predetermined by the V1 set.
+service Marketplace {
+    // GetOAuthToken is for requesting an oauth token for a marketplace application to use to authenticate against all 
+    // other RPC's/API's.
+    rpc GetOAuthToken (GetOAuthTokenRequest) returns (GetOAuthTokenResponse) {}
+
+    // GetSessionTransferURLRequest is for requesting the session transfer URL for an account (account group).
+    rpc GetSessionTransferURL (GetSessionTransferURLRequest) returns (GetSessionTransferURLResponse) {}
+
+    // CheckAccountPermission checks whether the given user has access to the given account (account group).
+    rpc CheckAccountPermission (CheckAccountPermissionRequest) returns (google.protobuf.Empty) {}
+
+    // ListAssociatedUsers gives all the Users for specified business.
+    rpc ListAssociatedUsers (ListAssociatedUsersRequest) returns (ListAssociatedUsersResponse) {}
+
+    // ListActiveAddons gives all the addons the specified business has active on the specified application.
+    rpc ListActiveAddons (ListActiveAddonsRequest) returns (ListActiveAddonsResponse) {}
+
+    // GetSessionFromToken is for requesting the session information from a token
+    rpc GetSessionFromToken (GetSessionFromTokenRequest) returns (GetSessionFromTokenResponse) {}
+}

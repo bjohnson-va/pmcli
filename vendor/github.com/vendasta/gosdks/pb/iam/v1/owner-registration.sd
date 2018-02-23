@@ -1,0 +1,9 @@
+title Owner Registration
+
+Owner->IAM: RegisterResourceOwner "account-group-microservice"
+IAM-->Owner: google.protobuf.Empty
+Owner->IAM: RegisterResource "account-group" with identifiers ["account_group_id"] at the url "api.ag.vendasta-internal.com/account-group-iam-resource"
+IAM-->Owner: google.protobuf.Empty
+Owner->IAM: RegisterPolicy "full-access" to resource "account-group" for scopes [read, write, delete]
+IAM-->Owner: google.protobuf.Empty
+note left of IAM: From now on, IAM will use the "full-access" policy to evaluate any clients' request for read, write, or delete access to an "account-group"

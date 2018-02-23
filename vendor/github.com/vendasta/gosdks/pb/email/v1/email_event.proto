@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package email.v1;
+
+import "google/protobuf/timestamp.proto";
+
+enum EventType {
+    EMPTY = 0;
+    PROCESSED = 1;
+    DELIVERED = 2;
+    OPENED = 3;
+    CLICKED = 4;
+    BOUNCED = 5;
+    DEFERRED = 6;
+    DROPPED = 7;
+    SPAMREPORT = 8;
+    UNSUBSCRIBED = 9;
+}
+
+// A key/value attribute
+message Attribute {
+    string key = 1;
+    string value = 2;
+}
+
+// An email event
+message EmailEvent {
+    // A unique identifier for the email this event is for
+    string email_id = 1;
+    // The email address of the email's recipient
+    string email_address = 2;
+    // The type of event
+    EventType event_type = 3;
+    // The subject of the email this event is for
+    string subject = 4;
+    // Attributes attached to the email this event is for
+    repeated Attribute attributes = 5;
+    // The time of this event
+    google.protobuf.Timestamp event_time = 6;
+    // IP address the event originated from, if applicable
+    string ip_address = 7;
+    // The user agent the event originated from, if applicable
+    string user_agent = 8;
+}

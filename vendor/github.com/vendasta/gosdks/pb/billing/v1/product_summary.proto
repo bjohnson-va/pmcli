@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package billing.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message ListProductSummariesRequest {
+    // Unique ID of the merchant
+    string merchant_id = 1;
+    // The starting date of the billing period
+    google.protobuf.Timestamp start_date = 2;
+    // The ending date of the billing period
+    google.protobuf.Timestamp end_date = 3;
+    // Requested position in pagination
+    string cursor = 4;
+    // Limit of results
+    int64 page_size = 5;
+}
+
+message ListProductSummariesResponse {
+    // The list of product summary results
+    repeated ProductSummary results = 1;
+    // Next position in pagination
+    string next_cursor = 2;
+    // Indicates if more data is available
+    bool has_more = 3;
+}
+
+message ProductSummary {
+    // The unique SKU of the product
+    string sku = 1;
+    // Name of the product
+    string product_name = 2;
+    // Quantity of all items sold
+    int64 total_quantity = 3;
+    // Summed dollar amount of all items in cents
+    int64 total_amount = 4;
+    // Summed dollar amount of all discounts in cents
+    int64 total_discount = 5;
+    // Pricing of the product
+    Pricing pricing = 6;
+
+    message Discount {
+        enum DiscountType {
+            FIXED_AMOUNT = 0;
+            PERCENT_AMOUNT = 1;
+            FIXED_NUMBER_OF_UNITS = 2;
+            FIXED_AMOUNT_PER_UNIT = 3;
+        }
+        // Discount type eg. fixed_amount, percent_amount, etc.
+        DiscountType type = 1;
+        // Value of the discount
+        int64 value = 2;
+        // Discounted dollar amount in cents
+        int64 total_amount = 3;
+        // Full english description
+        string description = 4;
+    }
+    // Discounts of the product
+    repeated Discount discounts = 7;
+}
+
+message Pricing {
+    enum RuleType {
+        STANDARD = 0;
+        STAIRSTEP = 1;
+        TIERED = 2;
+    }
+    // Pricing rule type eg. Standard, Stairstep, etc
+    RuleType type = 1;
+
+    message Rule {
+        // Minimum unit range
+        int64 min = 1;
+        // Maximum unit range
+        int64 max = 2;
+        // Number of units sold in range
+        int64 units = 3;
+        // Price per unit sold in range
+        int64 unit_price = 4;
+        // Total dollar amount sold in range in cents
+        int64 total_amount = 5;
+    }
+    // Pricing rules
+    repeated Rule rules = 2;
+
+    message PrepaidSale {
+        // Number of units prepaid
+        int64 units_paid = 1;
+        // Number of prepaid units sold, can not exceed units_paid
+        int64 units_sold = 2;
+        // Ending date for prepaid sale
+        google.protobuf.Timestamp end_date = 3;
+    }
+    // Prepaid sale information
+    PrepaidSale prepaid_sale = 3;
+}

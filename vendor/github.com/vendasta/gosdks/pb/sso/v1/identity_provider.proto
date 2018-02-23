@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package sso.v1;
+
+option java_package = "com.vendasta.sso.v1";
+option java_outer_classname = "IdentityProvider";
+
+import "sso/v1/service_provider.proto";
+
+// The identity context is used to determine which identity provider to use. This context is used in conjunction with
+// the service context, provided by the service provider. The two contexts require domain logic to be glued together; 
+// for example, when the service provider provides an account, we can determine the partner from that account, then 
+// match that up to an identity provider Partner context.
+message IdentityContext {
+    message Partner {
+        string partner_id = 1;
+    }
+
+    message Market {
+        string partner_id = 1;
+        string market_id = 2;
+    }
+
+    oneof context {
+        Partner partner = 1;
+        Market market = 2;
+    }
+}
+
+message SetSessionTransferURLTemplateRequest {
+    // An ID unique to a particular identity provider, which may provide identity for more than one context.
+    string identity_provider_id = 1;
+    // The URL of the endpoint that will handle the session transfer.
+    string session_transfer_url_template = 2;
+    // The identity context.
+    IdentityContext context = 3;
+}
+
+message GetSessionTransferURLTemplateRequest {
+    // An ID unique to a particular identity provider, which may provide identity for more than one context.    
+    string identity_provider_id = 1;
+    // The identity context.
+    IdentityContext context = 2;
+}
+
+message GetSessionTransferURLTemplateResponse {
+    // The session transfer URL to send the user to (which may result in a redirect to a login screen).
+    string session_transfer_url_template = 1;
+}
+
+message GetEntryURLRequest {
+    // The service provider ID.
+    string service_provider_id = 1;
+    // See ServiceContext for more information.
+    ServiceContext context = 2;
+}
+
+message GetEntryURLResponse {
+    // The entry URL
+    string entry_url = 1;
+}
+
+message GetEntryURLWithCodeRequest {
+    // The service provider ID.    
+    string service_provider_id = 1;
+    // The session ID the identity provider wants to pass along to the service providers.
+    string session_id = 2;
+    // The user ID.
+    string user_id = 3;
+    // The user's email.
+    string email = 4;
+    // The service context needed to help determine which identity provider to use.
+    ServiceContext context = 5;
+    // The next URL to send the user to, once the code exchange is complete on the entry URL.
+    string next_url = 6;
+}
+
+message GetEntryURLWithCodeResponse {
+    // The entry URL, containing the code in the query params
+    string entry_url = 1;
+}
+
+message LogoutRequest {
+    // The session ID to logout
+    string session_id = 1;
+}

@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package marketplace_packages.v1;
+
+import "google/protobuf/timestamp.proto";
+import "marketplace_packages/v1/package.proto";
+
+
+message Product {
+	// ID of the product
+	string product_id = 1;
+
+	// ID of the partner
+	string partner_id = 2;
+
+	// Name of the product
+	string name = 3;
+
+	// The slogan for the package
+	string tagline = 4;
+
+	// Description of the product
+	string description = 5;
+
+	// Repersentation of the values of the product
+	repeated string key_selling_points = 6;
+
+	// Icon url
+	string icon_url = 7;
+
+	// Header image url
+	string header_image_url = 8;
+
+	// Screen shot url
+	repeated string screenshot_urls = 9;
+
+	// PDF url
+	repeated string pdf_upload_urls = 10;
+
+	// Currency for the product to be sold in
+	Currencies.Currency currency = 11;
+
+	// Whole sale price of the product
+	string wholesale_price = 12;
+
+	// Recommended selling price of the product
+	string recommended_sell_price = 13;
+
+	// How often it is billed
+	string billing_frequency = 14;
+
+	// DIY, DIFM. DIWM, etc
+	repeated ServiceModel.Type service_model = 16;
+
+	// Category for the product
+	string category = 17;
+
+	// LMI categories this product helps solve
+	repeated Lmi.Categories lmi_categories = 18;
+
+	// Indicates if a vendor or partner created
+	string origin = 19;
+
+	// Order form for the product activation
+	bool uses_customization_form = 20;
+
+	// Click in url
+	string entry_url = 21;
+
+	// Used to maintian session
+	string session_url = 22;
+
+	// External marketing url
+	string website_url = 23;
+
+	// User that updated the product
+	string updated_by = 24;
+
+	// Expiry date for products
+	google.protobuf.Timestamp end_date = 25;
+
+	// FAQs about products
+	repeated FrequentlyAskedQuestions faqs = 26;
+
+	// Time it was created
+	google.protobuf.Timestamp created = 27;
+
+	// Time it was updated last
+	google.protobuf.Timestamp updated = 28;
+
+	// Is the product archived
+	bool is_archived = 29;
+}
+
+message FrequentlyAskedQuestions {
+	// Question part of the faq
+	string question = 1;
+
+	// Answer part of the faq
+	string answer = 2;
+}
+
+// Local marketing index categories
+message Lmi {
+	enum Categories {
+		NOT_SET = 0;
+        WEBSITE = 1;
+        CONTENT_AND_EXPERIENCE = 2;
+        LISTINGS = 3;
+        REPUTATION = 4;
+        SEO = 5;
+        SOCIAL = 6;
+        ADVERTISING = 7;
+	}
+}
+
+message ServiceModel {
+	enum Type {
+		DIY = 0;
+		DIWM = 1;
+		DIFM = 2;
+	}
+}

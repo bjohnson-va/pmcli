@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package metrics.v1;
+
+import "google/protobuf/empty.proto";
+
+message Topic{
+    string ID = 1;
+    string project = 2;
+}
+
+message Subscription{
+    string ID = 1;
+}
+
+message PubsubMetric{
+    repeated Topic interestingTopics = 1;
+    int64 interestingTopicsCount = 2;
+    repeated Subscription interestingSubscriptions = 3;
+    int64 interestingSubscriptionsCount = 4;
+}
+
+message GetPubsubMetricsResponse {
+    PubsubMetric pubsubMetric = 1;
+}
+
+service Metrics {
+    rpc Get(google.protobuf.Empty) returns (GetPubsubMetricsResponse);
+}
+
+

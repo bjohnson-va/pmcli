@@ -1,0 +1,163 @@
+syntax = "proto3";
+
+package socialposts.v1;
+
+option java_package = "com.vendasta.socialposts.v1";
+option java_outer_classname = "SocialPostProtos";
+import "google/protobuf/timestamp.proto";
+
+enum PostingStatus {
+    POSTING_IN_PROGRESS = 0;
+    POSTING_FAILED = 1;
+    POSTING_COMPLETED = 2;
+}
+
+//The information about a social post. It does not necessarily need to have been posted yet
+message SocialPost{
+    //The unique identifier of the business this post is related to
+    string business_id = 1;
+    string social_post_id = 2;
+    string post_text = 3;
+    //The date time that this post was posted to it's corresponding social account
+    google.protobuf.Timestamp posted = 4;
+    bool is_error = 5;
+    enum DeletionStatus {
+        NONE = 0;
+	    FAILED = 1;
+	    IN_PROGRESS = 2;
+    }
+    DeletionStatus deletion_status = 6;   
+    enum Service {
+        TWITTER = 0;
+        FACEBOOK = 1;
+        LINKED_IN = 2;
+        GOOGLE_PLUS = 3;
+        GOOGLE_MY_BUSINESS = 4;
+        UNKNOWN = 5;
+    }
+    Service service = 7;
+    //The link to the post on the social page (e.g. an actual link to Facebook)
+    string permalink = 8;
+    //The date time that this entity was created in our system (not the time that it was posted)
+    google.protobuf.Timestamp created = 9;
+    string profile_url = 10;
+    string profile_image_url = 11;
+    //The date time that this post is scheduled to be posted. If it's in the past that means it we have or are attempting to post this
+    //You can see if it was successful based on the status
+    google.protobuf.Timestamp scheduled = 12;
+    //The status of attempting to post this social post to the social account
+    PostingStatus status = 13;
+    //The image posted
+    string image_url = 14;
+    //The name of the social account (may not always be populated)
+    string name = 15;
+    //The username of the social account (may not always be populated)
+    string username = 16;
+    //The correlation id for posts that have been posted as a group
+    string parent_id = 17;
+    
+}
+
+message ListSocialPostsResponse {
+    //A page of social posts
+    repeated SocialPost social_posts = 1;
+    // A cursor that can be provided to retrieve the next page of results
+    string next_cursor = 2;
+    // Whether or not more results exist
+    bool has_more = 3;
+}
+
+message ListSocialPostsRequest {
+    //If a start time is provided, a page of the posts that are newer than it will be returned
+    //If a start time of the current date time is provided you will get a page of posts that are scheduled to be posted
+    google.protobuf.Timestamp start = 1;
+    //If an end time is provided, a page of the posts older than it will be returned
+    //If an end time of the current date time is provided you will not get any posts that are scheduled to be posted
+    google.protobuf.Timestamp end = 2;
+    //The business to list the social posts for
+    string business_id = 3;
+    string partner_id = 4;
+    // A cursor that can be provided to retrieve the next page of results
+    string cursor = 5;
+}
+
+message Error {
+    string reason = 1;
+}
+
+message SchedulePostStatus {
+    //The ID of this post that can be used to get it again
+    string social_post_id = 1;
+    //The ID of the social page this post was posted to
+    string social_service_id = 2;
+    //The Name or Username of the social page this post was posted to (may not always be populated)
+    string social_service_label = 3;
+    //The reason why there was an error scheduling the post. Error will be nil if it was successful
+    Error error = 4;
+}
+
+message SocialPostData {
+    //The text to post, must be provided for all twitter and google plus page posts
+    string post_text = 1;
+    //The image to post
+    string image_url = 2;
+    //When this social post should be posted. If not provided the social  will be posted asap
+    google.protobuf.Timestamp schedule_for = 3;
+}
+
+message ScheduleToAllPagesRequest {
+    //The social post to post
+    SocialPostData social_post = 1;
+    string partner_id = 2;
+    //The business to post the social post to all of it's connected pages (twitter user, linkedin company, google plus page, facebook page)
+    string business_id = 3;
+}
+
+message ScheduleToAllPagesResponse {
+    //The statuses of the posts that were attempted to be scheduled
+    repeated SchedulePostStatus statuses = 1;
+}
+
+message SchedulePostRequest {
+    //The social post to post
+    SocialPostData social_post = 1;
+    //The social accounts to post this post to
+    repeated string social_service_ids = 2;
+    string partner_id = 3;
+    //The business that has the social accounts connected to it
+    string business_id = 4;
+}
+
+message SchedulePostResponse {
+    //The statuses of the posts that were attempted to be scheduled
+    repeated SchedulePostStatus statuses = 1;
+}
+
+// Begin and end of date range
+message DateRangeFilter {
+    google.protobuf.Timestamp begin_range = 1;
+    google.protobuf.Timestamp end_range = 2;
+}
+
+message PartnerListScheduledSocialPostsRequest {
+
+    message Filters {
+        //Scheduled posts that are scheduled to be posted between begin and end
+        //Only one of scheduled_date_filter or created_date_filter can be provided
+        DateRangeFilter date_range = 1;
+        string partner_id = 3;
+    }
+    // A cursor that can be provided to retrieve the next page of results
+    string cursor = 5;
+    Filters filters = 6;
+    
+}
+
+message PartnerListScheduledPostsResponse {
+    //A page of social posts
+    repeated SocialPost social_posts = 1;
+    // A cursor that can be provided to retrieve the next page of results
+    string next_cursor = 2;
+    // Whether or not more results exist
+    bool has_more = 3;
+}

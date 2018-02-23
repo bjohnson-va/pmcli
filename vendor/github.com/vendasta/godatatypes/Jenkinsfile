@@ -1,0 +1,45 @@
+#!groovy
+properties ([
+      disableConcurrentBuilds()
+])
+
+def label = "godatatypes.${env.BRANCH_NAME}.${env.BUILD_NUMBER}".replace('-', '_').replace('/', '_')
+
+podTemplate(label: label, containers: [
+    containerTemplate(
+        name: 'jnlp',
+        image: 'gcr.io/repcore-prod/gosdks_ci:v4',
+        alwaysPullImage: true,
+        workingDir: '/home/jenkins',
+        resourceRequestCpu: '2',
+        resourceLimitCpu: '2',
+        resourceRequestMemory: '4Gi',
+        resourceLimitMemory: '4Gi',
+
+    )],
+    volumes: [
+        secretVolume(mountPath: '/etc/hal9000', secretName: 'hal9000'),
+        emptyDirVolume(mountPath: '/home/jenkins'),
+        hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock'),
+    ]) {
+    node(label) {
+
+        stage("Checkout") {
+            checkout scm
+        }
+
+        stage("lint") {
+            sh("golint -set_exit_status tools/...")
+        }
+
+        stage("vet") {
+            sh("go vet ./tools/...")
+        }
+
+        stage("Test") {
+            sh("mkdir -p /go/src/github.com/vendasta")
+            sh("ln -s `pwd` /go/src/github.com/vendasta/godatatypes")
+            sh("cd /go/src/github.com/vendasta/godatatypes && inv test")
+        }
+    }
+}

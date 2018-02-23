@@ -1,0 +1,24 @@
+#!groovy
+@Library('shared-libraries') _
+
+properties ([
+    buildDiscarder(logRotator(artifactNumToKeepStr: '5', daysToKeepStr: '15')),
+    disableConcurrentBuilds()
+])
+
+def parameters = [:]
+parameters['label'] = "mscli.${env.BRANCH_NAME}.${env.BUILD_NUMBER}".replaceAll("[^a-zA-Z0-9]+","_")
+parameters['projectRoot'] = 'mscli'
+parameters['namespace'] = 'mscli'
+
+parameters['buildCommands'] = [
+    "go build ./...",
+    "go test ./...",
+    "golint ./cmd/... ./pkg/... ./tools/... || true",  // TODO: remove ||true after lint errors are fixed
+    "go vet ./...",
+]
+
+// skip deploy
+parameters['environments'] = []
+
+mscliNode(parameters) {}

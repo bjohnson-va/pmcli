@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package billing.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message PaymentCard {
+    // last 4 digits of the credit card
+    string last_four_digits = 1;
+    // the card type, ex. Visa, Mastercard, AMEX
+    enum CARD_TYPE {
+        UNKNOWN = 0;
+        VISA = 1;
+        MASTERCARD = 2;
+        AMEX = 3;
+        DISCOVER = 4;
+        JCB = 5;
+        DINERS_CLUB = 6;
+    }
+    CARD_TYPE card_type = 3;
+    // the billing address of the card
+    string address = 4;
+    // city of the billing address of the card
+    string city = 5;
+    // state of the billing address of the card
+    string state = 6;
+    // country of the billing address of the card
+    string country = 7;
+    // zip/postal code of the billing address of the card
+    string zip_code = 8;
+    // card_id that stripe returns when creating a card
+    string card_id = 9;
+    // name of the cardholder
+    string cardholder_name = 10;
+    // The expiry month of the credit card
+    int32 expiry_month = 11;
+    // The expiry year of the credit card
+    int32 expiry_year = 12;
+}

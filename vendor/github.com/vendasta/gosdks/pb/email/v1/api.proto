@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package email.v1;
+
+import "google/protobuf/timestamp.proto";
+import "email_event.proto";
+
+// Contains metadata about the paged response
+message PagedResponseMetadata {
+    // A cursor that can be provided to retrieve the next page of results
+    string next_cursor = 1;
+    // Whether or not more results exist
+    bool has_more = 2;
+    // Total results found by the operation
+    int64 total_results = 3;
+}
+
+// To provide options for the paged request
+message PagedRequestOptions {
+    // cursor can be passed to retrieve the next page of results keyed by the cursor
+    string cursor = 1;
+    // page_size specifies the number of items to return in the next page
+    int64 page_size = 2;
+}
+
+// Start and end of a date range to filter on
+message DateRangeFilter {
+    // Start of the range
+    google.protobuf.Timestamp start = 1;
+    // End of the range
+    google.protobuf.Timestamp end = 2;
+}
+
+// List email events matching a set of filters
+message ListEmailEventsRequest {
+    // Filters to filter the list of email events on
+    message Filters {
+        // Attributes to filter on
+        repeated Attribute attributes = 1;
+        // Event time range to filter on
+        DateRangeFilter event_time_filter = 2;
+        // Event types to filter on
+        repeated EventType event_types = 3;
+    }
+
+    Filters filters = 1;
+    // Options for how to page the response for this request
+    PagedRequestOptions paging_options = 2;
+}
+
+// Response containing a list of email events and paging metadata
+message ListEmailEventsResponse {
+    // The email events matching the lookup query
+    repeated EmailEvent events = 1;
+    // Metadata about the paging
+    PagedResponseMetadata paging_metadata = 3;
+}
+
+// Service for email activity related functionalities, like looking up email events
+service ActivityService {
+    // List email events matching a set of filters
+    rpc ListEmailEvents(ListEmailEventsRequest) returns (ListEmailEventsResponse) {};
+}
+

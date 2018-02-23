@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package datatransfer.v1;
+
+import "google/protobuf/empty.proto";
+
+// A request to start a data transfer
+message StartTransferRequest {
+    // The URL of the file to be transferred (beginning with http or https)
+    string source_url = 1;
+    // The name of the cloud storage bucket to place the transferred file in
+    string destination_bucket_name = 2;
+    // The destination filename to be saved in cloud storage
+    string destination_filename = 3;
+    // An arbitrary label for the transfer
+    string label = 4;
+}
+
+message StartTransferResponse {
+    // Unique identifier for the data transfer
+    string data_transfer_id = 1;
+}
+
+// Data Transfer Services
+service DataTransferService {
+    // StartTransfer begins a data transfer from the provided source_url to the destination bucket
+    rpc StartTransfer(StartTransferRequest) returns (StartTransferResponse) {}
+}

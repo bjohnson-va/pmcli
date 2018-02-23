@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package instagram.v1;
+
+// A model representing an instagram user connected through oauth
+message User {
+    // The ID of the partner owning this account group
+    string partner_id = 1;
+    // The ID of the account group authing this user
+    string account_group_id = 2;
+    // A unique internal ID for an instagram user
+    string user_id = 3;
+    // A unique ID for an instagram user
+    string instagram_user_id = 4;
+    // A name for an instagram user
+    string username = 5;
+    // A URL to a profile picture
+    string profile_picture = 6;
+    // A full name for this instagram user
+    string full_name = 7;
+    // The bio set by the user in instagram
+    string bio = 8;
+    // A link to the user's website
+    string website = 9;
+    // Whether or not this account is a business
+    bool is_business = 10;
+    // The access token for this user
+    string access_token = 11;
+}

@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package snapshot.v1;
+
+import "google/protobuf/timestamp.proto";
+import "snapshot/v1/field_mask.proto";
+
+// GlobalConfig is the global config for a snapshot
+message GlobalConfig {
+    // The types of videos for the whole report
+    enum VideoStyle {
+        // Don't show videos
+        NO_VIDEOS = 0;
+        // Show the legacy north american videos
+        NORTH_AMERICAN_LEGACY = 1;
+        // Show the current north american videos
+        NORTH_AMERICAN = 2;
+        // Show the australia videos
+        AUSTRALIAN = 3;
+    }
+
+    // The sections that can be enabled for a snapshot report
+    enum EnabledSection {
+        REVIEWS = 0;
+    }
+    // Whether or not to hide grades
+    bool hide_grades = 1;
+    // The type of videos to show
+    VideoStyle video_style = 2;
+    // Whether or not to hide images
+    bool hide_images = 3;
+    // The sections enabled and the order to display them in
+    repeated EnabledSection enabled_sections = 6;
+}
+
+// Available grades of a snapshot report or section
+enum Grade {
+    NO_GRADE = 0;
+    A = 1;
+    B = 2;
+    C = 3;
+    D = 4;
+    F = 5;
+}
+
+// SectionContent contains the meta information for each section of the report
+message SectionContent {
+    reserved 1;
+    // The message_id is calculated based off the data of the section and corresponds to the message content to show.
+    // If customized message on the section is set, that should override this message id
+    string message_id = 2;
+    // The video_id is calculated based of the data of the section and corresponds to the video to show.
+    // This video id does not take into account the language setting of the snapshot report and 
+    string video_id = 3;
+}
+
+// Snapshot is the parent entity that represents the snapshot as a whole
+message Snapshot {
+    // The unique id of this snapshot
+    string snapshot_id = 1;
+    // The id of the buisness this report was generated for
+    string business_id = 2;
+    // The configuration of this snapshot
+    GlobalConfig config = 3;
+    // When this snapshot was created
+    google.protobuf.Timestamp created = 4;
+    // When this snapshot has expired or will expire
+    google.protobuf.Timestamp expired = 5;
+}
+
+message CreateSnapshotRequest {
+    // The id of the business to create the snapshot for
+    string business_id = 1;
+}
+
+message CreateSnapshotResponse {
+    // The id of the snapshot that is being created
+    string snapshot_id = 1;
+}
+
+message GetSnapshotRequest {
+    // The id of the snapshot to get
+    string snapshot_id = 1;
+}
+
+message GetSnapshotResponse {
+    Snapshot snapshot = 1;
+}
+
+message UpdateSnapshotConfigRequest {
+    // The id of the snapshot to update the config for
+    string snapshot_id = 1;
+    GlobalConfig config = 2;
+
+    // Mask for what fields should be updated
+    FieldMask field_mask = 20;
+}
+
+message GetSnapshotIDRequest {
+    // The id of the partner (required)
+    string partner_id = 1;
+    // The id of the market (optional)
+    string market_id = 2;
+}
+
+message GetSnapshotIDResponse {
+    // The opaque snapshot id to get the snapshot with to edit the default configs
+    // There are no guarantees on the structure of this id, and it may change at any time
+    // you should treat is as an opaque random string and not try to build it manually
+    string snapshot_id = 1;
+}

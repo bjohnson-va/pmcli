@@ -1,0 +1,532 @@
+syntax = "proto3";
+
+package accountgroup.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+import "account_group/v1/field_mask.proto";
+
+// Represents a geo point location.
+message Geo {
+    double latitude = 1;
+    double longitude = 2;
+}
+
+message Accounts {
+    repeated Account accounts = 1;
+}
+message ListingDistributionDetails {
+     string order_id = 1;
+     string purchase_id = 2;
+     google.protobuf.Timestamp from_date = 3;
+     google.protobuf.Timestamp thru_date = 4;
+     bool auto_renew = 5;
+
+}
+
+message ListingSyncPro {
+
+    enum ServiceProviders {
+        UBERALL = 0;
+        YEXT = 1;
+    }
+
+    enum BillingFrequency {
+        MONTHLY = 0;
+        YEARLY = 1;
+        ONE_TIME = 2;
+    }
+
+    google.protobuf.Timestamp purchase_date = 1;
+    BillingFrequency billing_frequency = 2;
+    google.protobuf.Timestamp expiry_date = 3;
+    string country = 4;
+    bool discount_flag = 5;
+    ServiceProviders service_provider = 6;
+
+}
+
+message AccountGroupExternalIdentifiers {
+    string origin = 1;
+    repeated string job_id = 2;
+    string customer_identifier = 3;
+    repeated string tags = 5;
+    repeated string action_lists = 6;
+
+    string social_profile_id = 7;
+    string partner_id = 8;
+    string market_id = 9;
+    repeated string tax_ids = 10;
+    // Primary salesperson id
+    string sales_person_id = 11;
+    // Additional salesperson ids assigned to an account group which is not the primary salesperson id
+    repeated string additional_sales_person_ids = 12;
+    // Used to link AccountGroups to a corresponding Salesforce Account Object
+    string salesforce_id = 13;
+}
+
+message SocialURLs {
+    string googleplus_url = 1;
+    string linkedin_url = 2;
+    string foursquare_url = 3;
+    string twitter_url = 4;
+    string facebook_url = 5;
+    string rss_url = 6;
+    string youtube_url = 7;
+    string instagram_url = 8;
+    string pinterest_url = 9;
+}
+
+
+message HoursOfOperation {
+    message Span {
+        repeated string day_of_week = 1;
+        string opens = 2;
+        string closes = 3;
+        string description = 4;
+    }
+    repeated Span hours_of_operation = 1;
+}
+
+message ContactDetails {
+    string first_name = 1;
+    string last_name = 2;
+    string email = 3;
+    string phone_number = 4;
+
+}
+
+message Snapshots {
+    message Snapshot {
+        string snapshot_id = 1;
+        google.protobuf.Timestamp created = 2;
+        google.protobuf.Timestamp expiry = 3;
+    }
+    repeated Snapshot snapshots = 1;
+}
+
+message LegacyProductDetails {
+    repeated string key_person = 1;
+    repeated string share_of_voice_service = 2;
+    string fax_number = 3;
+    repeated string common_name = 4;
+    string cell_number = 5;
+    repeated string competitor = 6;
+    string admin_notes = 7;
+
+    repeated string seo_category = 8;
+    string email = 9;
+    string place = 10;
+    string tagline = 11;
+    bool subscribed_to_campaigns = 12;
+
+}
+
+message CustomField {
+    string name = 1;
+    string value = 2;
+}
+
+message HealthCareProfessionalInformation {
+    enum Gender {
+        NotSpecified = 0;
+        Female = 1;
+        Male = 2;
+        Other = 3;
+    }
+    google.protobuf.Timestamp date_of_birth = 1;
+    string email = 2;
+    repeated string fellowship = 3;
+    string first_name = 4;
+    Gender gender = 5;
+    string initials = 6;
+    repeated string insurances_accepted = 7;
+    string last_name = 9;
+    string medical_license_number = 10;
+    string national_provider_identifier = 11;
+    string office = 12;
+    repeated string professional_credential = 13;
+    repeated string residency = 14;
+    repeated string school = 15;
+    repeated string specialty = 16;
+    string standardized_title = 17;
+    string state_license = 18;
+    google.protobuf.BoolValue is_taking_patients = 19;
+
+    reserved 8;
+}
+
+message RichData {
+    enum PaymentMethods {
+        AMERICAN_EXPRESS = 0;
+        ANDROID_PAY = 1;
+        APPLE_PAY = 2;
+        CASH = 3;
+        CHECK = 4;
+        DEBIT = 5;
+        DINERS_CLUB = 6;
+        DISCOVER = 7;
+        MASTERCARD = 8;
+        PAYPAL = 9;
+        SAMSUNG_PAY = 10;
+        STORE_CARD = 11;
+        TRAVELERS_CHECK = 12;
+        VISA = 13;
+    }
+
+    string toll_free_number = 1;
+    string description = 2;
+    string short_description = 3;
+    repeated string services_offered = 4;
+    repeated string brands_carried = 5;
+    string landmark = 6;
+    repeated PaymentMethods payment_methods = 7;
+    repeated CustomField custom_fields = 8;
+
+    HealthCareProfessionalInformation health_care_professional_information = 9;
+
+    repeated string inferred_attributes = 10;
+}
+
+message Status {
+    bool suspended = 1;
+}
+
+message Association {
+    string label = 1;
+    string product_id = 2;
+    string product_user_id = 3;
+    string vbc_user_id = 4;
+    bool default_location = 5;
+}
+
+message ActionListAppend {
+    string action_list_name = 1;
+}
+
+// Represents an Account Group
+message AccountGroup {
+    string account_group_id = 1;
+
+    google.protobuf.Timestamp deleted = 17;
+    google.protobuf.Timestamp created = 18;
+    google.protobuf.Timestamp updated = 19;
+
+    int64 version = 24;
+
+    Accounts accounts = 30;
+    ListingDistributionDetails listing_distribution = 31;
+    ListingSyncPro listing_sync_pro = 32;
+    repeated Association associations = 33;
+    AccountGroupExternalIdentifiers account_group_external_identifiers = 35;
+    SocialURLs social_urls = 36;
+    HoursOfOperation hours_of_operation = 37;
+    ContactDetails contact_details = 38;
+    Snapshots snapshot_reports = 39;
+    LegacyProductDetails legacy_product_details = 40;
+    RichData rich_data = 41;
+    AccountGroupLocation nap_data = 42;
+    Status status = 43;
+}
+
+// Request to retrieve an account group object
+message ListAccountsRequest {
+    // Account Group ID of the account group to retrieve
+    string account_group_id = 1;
+    // cursor should be supplied from the last response or ""
+    string cursor = 2;
+    // the number of results to retrieve, max size is 10.
+    int64 page_size = 3;
+}
+
+// A representation of a single account on an Account Group
+message Account {
+    // Whether the account is a trial account or not
+    bool is_trial = 1;
+    // Tags on the account
+    repeated string tags = 2;
+    // The marketplace app id or the legacy product id the account belongs to
+    string marketplace_app_id = 3;
+    // Account ID of this account
+    string account_id = 4;
+    // The date on which the account expires
+    google.protobuf.Timestamp expiry = 5;
+}
+
+// Response to a request to get the accounts for an account group
+message ListAccountsResponse {
+    // List of the accounts the account group has
+    repeated Account accounts = 1;
+}
+
+// ProjectionFilter controls which sets of extended account group data is returned for each account group.
+message ProjectionFilter {
+    // Controls if accounts is returned on the account group
+    bool accounts = 1;
+    // Controls if listing_distribution is returned on the account group
+    bool listing_distribution = 2;
+    // Controls if listing_sync_pro is returned on the account group
+    bool listing_sync_pro = 3;
+    // Controls if associations is returned on the account group
+    bool associations = 4;
+    // Controls if account_group_external_identifiers is returned on the account group
+    bool account_group_external_identifiers = 5;
+    // Controls if social_urls is returned on the account group
+    bool social_urls = 6;
+    // Controls if hours_of_operation is returned on the account group
+    bool hours_of_operation = 7;
+    // Controls if contact_details is returned on the account group
+    bool contact_details = 8;
+    // Controls if snapshot_reports is returned on the account group
+    bool snapshot_reports = 9;
+    // Controls if legacy_product_details is returned on the account group
+    bool legacy_product_details = 10;
+    // Controls if rich_data is returned on the account group
+    bool rich_data = 11;
+    // Controls if status is returned on the account group
+    bool status = 12;
+    // Controls if nap data is returned on the account group
+    bool nap_data = 13;
+}
+
+// ReadFilter can be used for filtering at the repository layer
+message ReadFilter {
+    // Whether or not to include deleted accounts on the read
+    bool include_deleted = 1;
+}
+
+message GetMultiRequest {
+    repeated string account_group_ids = 1;
+    ProjectionFilter projection_filter = 2;
+    ReadFilter read_filter = 3;
+}
+
+message LookupRequest {
+    ProjectionFilter projection_filter = 1;
+
+    enum AccountStatus {
+        Enabled = 0;
+        Disabled = 1;
+        Trial = 2;
+    }
+
+    enum Presence {
+        Any = 0;
+        Present = 1;
+        Absent = 2;
+    }
+
+    message AccountFilter {
+        string marketplace_app_id = 1;
+        AccountStatus account_status = 2;
+    }
+
+    message ListingDistributionFilter {
+        // Indicates if the result set should include accounts with active LD
+        bool active = 1;
+        // Indicates if the result set should include accounts with inactive LD
+        bool inactive = 2;
+
+        // Indicates the result set should include accounts with active LD in the next N days.
+        int64 expires_in_days = 3;
+
+        // Indicates the result set should include accounts with LD that has expired in the last N days.
+        int64 expired_in_days = 4;
+    }
+
+    message ListingSyncProFilter {
+        bool active = 1;
+        bool auto_renew = 2;
+        bool auto_renew_disabled = 3;
+        bool inactive = 4;
+        bool expired = 5;
+    }
+
+    message CreatedDateFilter {
+        google.protobuf.Timestamp begin_range = 1;
+        google.protobuf.Timestamp end_range = 2;
+    }
+
+    message TrialFilter {
+        bool is_suspended = 1;
+    }
+
+    message PresenceFilter {
+        Presence facebook = 1;
+        Presence foursquare = 2;
+        Presence googleplus = 3;
+        Presence linkedin = 4;
+        Presence twitter = 5;
+        Presence pinterest = 6;
+        Presence instagram = 7;
+        Presence youtube = 8;
+        Presence website = 9;
+    }
+
+    message LocationFilter {
+        string country = 1;
+        string state = 2;
+    }
+
+    message Filters {
+        string partner_id = 1;
+        repeated string market_ids = 2;
+        string sales_person_id = 3;
+        string customer_id = 4;
+        repeated string tags = 5;
+        repeated AccountFilter account_filters = 6;
+        ListingDistributionFilter listing_distribution_filter = 7;
+        CreatedDateFilter created_date_filter = 8;
+        ListingSyncProFilter listing_sync_pro_filter = 9;
+        TrialFilter trial_filter = 10;
+        repeated string taxonomy_ids = 11;
+        PresenceFilter presence_filter = 12;
+        LocationFilter location_filter = 13;
+    }
+    Filters filters = 2;
+
+    string cursor = 3;
+    int64 page_size = 4;
+
+    SortOptions sort_options = 5;
+
+    // search_term is an arbitrary string to perform full text search across the account group's location data
+    string search_term = 6;
+}
+
+// The directions that a result set can be sorted in.
+enum SortDirection {
+    Ascending = 0;
+    Descending = 1;
+}
+
+// The field to sort a result set on.
+enum SortField {
+    Modified = 0;
+    Created = 1;
+    CompanyName = 2;
+}
+
+// Options for controlling the order of query results
+message SortOptions {
+    // A direction to sort results in
+    SortDirection direction = 1;
+    // Field to sort on
+    SortField field = 2;
+}
+
+message PagedResponse {
+    repeated AccountGroup account_groups = 1;
+
+    // A cursor that can be provided to retrieve the next page of results
+    string next_cursor = 2;
+
+    // Whether or not more results exist
+    bool has_more = 3;
+
+    // The total number of results for this query across all pages
+    int64 total_results = 4;
+}
+
+message GetMultiResponse {
+    message AccountGroupContainer {
+        AccountGroup account_group = 1;
+    }
+    repeated AccountGroupContainer account_groups = 1;
+}
+
+message AccountGroupLocation {
+    string company_name = 4;
+    string address = 5;
+    string city = 6;
+    string state = 7;
+    string zip = 8;
+    string country =9;
+    string website = 10;
+    repeated string work_number = 11;
+    repeated string call_tracking_number = 12;
+    Geo location = 13;
+    string timezone = 14;
+}
+
+message CreateAccountGroupRequest {
+    AccountGroupLocation account_group_nap = 1;
+    // ID of the partner's social profile group which the account will be associated with
+    string social_profile_group_id = 2;
+
+    // The set of update operations to be done to the extended account group data after the create.
+    repeated UpdateOperation update_operations = 3;
+}
+
+message CreateAccountGroupResponse {
+    string account_group_id = 1;
+}
+
+message DeleteAccountGroupRequest {
+    string account_group_id = 1;
+}
+
+// BulkUpdateRequest allows updating all of the pieces of the account group and runs them in order.
+message BulkUpdateRequest {
+    string account_group_id = 1;
+    repeated UpdateOperation update_operations = 2;
+}
+
+// Update operation allows updating a specific piece of the account gruop
+message UpdateOperation {
+    oneof operation {
+        AccountGroupLocation account_group_nap = 1;
+        ListingSyncPro listing_sync_proto = 3;
+        AccountGroupExternalIdentifiers account_group_external_identifiers = 4;
+        SocialURLs social_urls = 5;
+        HoursOfOperation hours_of_operation = 6;
+        ContactDetails contact_details = 7;
+        Snapshots snapshots = 8;
+        LegacyProductDetails legacy_product_details = 9;
+        RichData rich_data = 10;
+        Status status = 11;
+        ActionListAppend action_list_append = 12;
+    }
+    FieldMask field_mask = 20;
+}
+
+
+// Account Group Service to retrieve account group information
+service AccountGroupService {
+    rpc GetMulti(GetMultiRequest) returns (GetMultiResponse) {
+        option (google.api.http) = {
+            post: "/v1/account-group/get-multi"
+            body: "*"
+        };
+    }
+
+    rpc Lookup(LookupRequest) returns (PagedResponse) {
+        option (google.api.http) = {
+            post: "/v1/account-group/lookup"
+            body: "*"
+        };
+    }
+
+    rpc Create(CreateAccountGroupRequest) returns (CreateAccountGroupResponse) {
+        option (google.api.http) = {
+            post: "/v1/account-group/create"
+            body: "*"
+        };
+    }
+
+    rpc Delete(DeleteAccountGroupRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/account-group/delete"
+            body: "*"
+        };
+    }
+
+    rpc BulkUpdate(BulkUpdateRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/account-group/bulk-update"
+            body: "*"
+        };
+    }
+}

@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package sso.v1;
+
+option java_package = "com.vendasta.sso.v1";
+option java_outer_classname = "SSO";
+
+import "google/protobuf/empty.proto";
+import "sso/v1/identity_provider.proto";
+import "sso/v1/service_provider.proto";
+
+// The Identity Provider Admin service provides RPC's for managing an identity provider, such as VBC, or a partner. All 
+// RPC's are accessed by identity provider administrators, which would currently only be partner admins.
+service IdentityProviderAdmin {
+    // Get the session transfer URL for a given context.
+    rpc GetSessionTransferURLTemplate(GetSessionTransferURLTemplateRequest) returns (GetSessionTransferURLTemplateResponse){};
+    // Set the session transfer URL for a given context.
+    rpc SetSessionTransferURLTemplate(SetSessionTransferURLTemplateRequest) returns (google.protobuf.Empty){};
+}
+
+// The Identity Provider service provides RPC's for an identity provider application to complete the session transfer 
+// process. All RPC's are accessed by an identity provider application, such as VBC, or a partner dashboard.
+service IdentityProvider {
+    // Get the entry URL of a service provider.
+    rpc GetEntryURL(GetEntryURLRequest) returns (GetEntryURLResponse){};
+    // Get the entry URL of a service provider with a code that will be exchanged for a user session.
+    rpc GetEntryURLWithCode(GetEntryURLWithCodeRequest) returns (GetEntryURLWithCodeResponse){};
+    // Logout of the session for a user.
+    rpc Logout(LogoutRequest) returns (google.protobuf.Empty){};
+}
+
+// The Service Provider Admin service provides RPC's for managing a service provider, such as a marketplace application.
+// All RPC's are accessed by service provider administators, which would currently be vendor admins.
+service ServiceProviderAdmin {
+    // Get the SSO URL's the application is configured for.
+    rpc GetSSOUrls(GetSSOUrlsRequest) returns (GetSSOUrlsResponse){};
+    // Set the SSO URL's for the application (service provider).
+    rpc SetSSOUrls(SetSSOUrlsRequest) returns (google.protobuf.Empty){};
+}
+
+// The Service Provider service provides RPC's for a service provider, such as a marketplace application, to initiate a 
+// session transfer. All RPC
+service ServiceProvider {
+    // Get the session transfer URL for a given context.
+    rpc GetSessionTransferURL(GetSessionTransferURLRequest) returns (GetSessionTransferURLResponse){};
+}

@@ -1,0 +1,183 @@
+syntax = "proto3";
+
+package contacts.v1;
+import "google/protobuf/timestamp.proto";
+
+//TODO: should this be returned with the contact? This might be the time to seperate the contacts and the review gen stuff
+//The review request stuff should really be with the review gen app, not with the contacts. Should be able to get the lists
+//fast enough that there's no reason to munge them together.
+//It would also allow us to handle multiple request statuses if there were multiple requests
+enum ReviewRequestStatus{
+    //The contact has left a review
+    LEFT_REVIEW = 0;
+    //The request has been delivered
+    DELIVERED = 1;
+    //The request did not make it to the recipient
+    BOUNCED = 2;
+    //The request was opened
+    OPENED = 3;
+    //The link in the request was clicked
+    CLICKED = 4;
+    //The would recommend link in the request was clicked
+    CLICKED_POSITIVE = 5;
+    //The would not recommend link in the request was clicked
+    CLICKED_NEGATIVE = 6;
+    //The recipient unsubscribed from receiving review requests
+    UNSUBSCRIBE = 7;
+    //The recipient marked the request as spam
+    SPAM_REPORT = 8;
+    //The requet is queued for sending but has not been delivered yet
+    SENDING = 9;
+    //The request was dropped
+    DROPPED = 10;
+}
+
+// The directions that a result set can be sorted in.
+enum SortDirection {
+    Ascending = 0;
+    Descending = 1;
+}
+
+// The field to sort a result set on.
+enum SortField {
+    Name = 0;
+    Created = 1;
+}
+
+// Options for controlling the order of query results
+message SortOptions {
+    // A direction to sort results in
+    SortDirection direction = 1;
+    // Field to sort on
+    SortField field = 2;
+}
+
+// Option for controlling the filter of the contacts list
+message Filters {
+    // The source of the contacts the user want to filter for
+    repeated string source = 1;
+}
+
+message Contact {
+    //A unique id for the contact
+    string contact_id = 1;
+    //The account group this contact belongs to
+    string account_group_id = 2;
+    //The first name of the contact
+    string first_name = 3;
+    //The last name of the contact
+    string last_name = 4;
+    //The street address of where the contact is
+    string address = 5;
+    //The city where the contact is
+    string city = 6;
+    //The state where the contact is
+    string state = 7;
+    //The country where the contact is
+    string country = 8;
+    //The phone number of the contact
+    repeated string phone = 9;
+    //The email address of the contact
+    repeated string email = 10;
+    //The time the contact was created
+    google.protobuf.Timestamp created = 11;
+    //The time the contact was last modified
+    google.protobuf.Timestamp updated = 12;
+    //The time the contact was deleted. Will be nil if the contact has not been deleted
+    google.protobuf.Timestamp deleted = 14;    
+    //The ID of the application that created the contact
+    string origin = 13;
+    // The customer specified ID from the origin system
+    string original_id = 15;
+}
+
+//Creating a contact requires [account_group_id] and at least one of [first_name, last_nam, email, phone] 
+message CreateContactRequest {
+    //The account group to add this contact to
+    string account_group_id = 1;
+    //The first name of the contact
+    string first_name = 2;
+    //The last name of the contact
+    string last_name = 3;
+    //The street address of where the contact is
+    string address = 4;
+    //The city where the contact is
+    string city = 5;
+    //The state where the contact is
+    string state = 6;
+    //The country where the contact is
+    string country = 7;
+    //The phone number of the contact
+    repeated string phone = 8;
+    //The email address of the contact
+    repeated string email = 9;
+    //The application ID that created the contact
+    string origin = 10;
+    //The customer specified ID from the origin system
+    string original_id = 11;
+}
+
+message CreateContactResponse {
+    // The new contact that's been created
+    Contact contact = 1;
+}
+
+message DeleteContactRequest {
+    // The contact ID to delete
+    string contact_id = 1;
+    // The account group to delete contact for
+    string account_group_id = 2;
+}
+
+message ListContactsRequest {
+    // The account group to retrieve the contacts for
+    string account_group_id = 1;
+    // Cursor should be supplied from the last response or ""
+    string cursor = 2;
+    // The number of results to retrieve.
+    int64 page_size = 3;
+    // search_term is an arbitrary string to perform full text search across all the contacts information
+    string search_term = 4;
+    // sort_options control what fileds it can sort on and the sorting direction
+    SortOptions sort_options = 5;
+    // filters control what fileds it can filte for
+    Filters filters = 6;
+}
+
+message ListContactsResponse {
+    // List of the contacts
+    repeated Contact contacts = 1;
+    // A cursor that can be provided to retrieve the next page of results
+    string next_cursor = 2;
+    // Whether or not more results exist
+    bool has_more = 3;
+    // Total number of contacts for account group
+    int64 total_results = 4;
+}
+
+message ListOriginsRequest {
+    // The account group id to retrieve contacts origins for
+    string account_group_id = 1;
+}
+
+message WhiteLabeledOrigin {
+    // The origin of contact
+    string origin = 1;
+    // The white labeled name of the contact origin
+    string white_labeled_name = 2;
+}
+
+message ListOriginsResponse {
+    // Mapping between an origin and the whitelabeled name
+    repeated WhiteLabeledOrigin white_labeled_origins = 1;
+}
+
+// A request type to associate a vendor's contact id to the contact id in our system
+message AssociateIDRequest {
+    // The Contact ID to add an external mapping for
+    string contact_id = 1;
+    // The Contact ID on the external source to map to
+    string vendor_contact_id = 2;
+    // The Application ID for the mapping
+    string app_id = 3;
+}

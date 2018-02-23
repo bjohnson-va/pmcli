@@ -1,0 +1,125 @@
+syntax = "proto3";
+
+package salesforce.v1;
+
+import "google/protobuf/empty.proto";
+
+// The installation key of a particular Vendasta application install (on customer's salesforce instance)
+message InstallationKey {
+    // Application key, which identifies which application installation instance
+    string consumer_key = 1;
+    // Application secret, which is used to verify ownership of the application
+    string consumer_secret = 2;
+    // The Salesforce instance to sync
+    string instance_id = 3;
+    // Indicates that this installation is to a sandbox org
+    bool is_sandbox = 4;
+}
+
+// Stores details about synchronization of a single object
+message SyncSetting {
+    // The name of the Salesforce entity
+    string entity_name = 1;
+    // When set updates to Vendasta platform are synced to Salesforce
+    bool sync_salesforce = 2;
+    // Shen set updates to Salesforce platform are synced to Vendasta
+    bool sync_vendasta = 3;
+}
+
+// Stores details about a single market's Salesforce Integration
+message Integration {
+    // Unique id of this particular integration
+    string integration_id = 1;
+    // The Vendasta partner this integration is built for
+    string partner_id = 2;
+    // The Vendasta market to sync
+    string market_id = 3;
+    // Salesforce installation key
+    InstallationKey salesforce_installation_key = 4;
+    // The set of entities being synced and the associated details
+    repeated SyncSetting sync_settings = 5;
+    // Salesforce access token (ephemeral)
+    string access_token = 6;
+    // Salesforce refresh token (long lived)
+    string refresh_token = 7;
+}
+
+message CreateRequest {
+    // The details of the integration to create
+    Integration integration = 1;
+}
+
+message CreateResponse {
+    // ID of the created Integration
+    string integration_id = 1;
+}
+
+message DeleteRequest {
+    // The Vendasta partner corresponding to the integration of interest
+    string partner_id = 1;
+    // The Vendasta market corresponding to the integration of interest
+    string market_id = 2;
+}
+
+message GetRequest {
+    // The Vendasta partner corresponding to the integration of interest
+    string partner_id = 1;
+    // The Vendasta market corresponding to the integration of interest
+    string market_id = 2;
+}
+
+message IntegrationSummary {
+    // The integration id
+    string integration_id = 1;
+    // The Vendasta partner ID
+    string partner_id = 2;
+    // The Vendasta market bing synchronized
+    string market_id = 3;
+    // The Salesforce instance being synchronized
+    string salesforce_instance_id = 4;
+    // Indicates whether this is a sandbox org
+    bool is_sandbox = 5;
+}
+
+message ListRequest {
+    // The maximum number of results to return in a single response
+    int32 page_size = 1;
+    // Optional cursor for handling large lists
+    string cursor = 2;
+}
+
+message ListResponse {
+    // A list of integration summaries (no tokens or keys)
+    repeated IntegrationSummary results = 1;
+    // If more results exist, this cursor can be used to retrieve them
+    string next_cursor = 2;
+    // Whether or not more results exist
+    bool has_more = 3;
+}
+
+message UpdateAccessTokenRequest {
+    // The Vendasta partner corresponding to the integration of interest
+    string partner_id = 1;
+    // The Vendasta market corresponding to the integration of interest
+    string market_id = 2;
+    // The new AccessToken
+    string access_token = 3;
+}
+
+service SalesforceIntegration {
+    // Adds a new Salesforce integration to a Parnter or Partner-Market
+    rpc Create(CreateRequest) returns (CreateResponse) {}
+
+    // Removes an existing Salesforce integration by ID
+    rpc Delete(DeleteRequest) returns (google.protobuf.Empty) {}
+
+    // Retrieves a specific integration
+    rpc Get(GetRequest) returns (Integration) {}
+
+    // Lists all existing integrations (Vendasta internal only)
+    rpc List(ListRequest) returns (ListResponse){}
+
+    // Updates the current Access Token for an integration
+    rpc UpdateAccessToken(UpdateAccessTokenRequest) returns (google.protobuf.Empty) {}
+}
+

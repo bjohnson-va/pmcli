@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package listingsearch.v1;
+
+// Geographical location
+message Geo {
+	double latitude = 1;
+	double longitude = 2;
+}
+
+// Location is a holder for search results from the corresponding api that a search is for
+message Location {
+    // The id that represents the location within the underlying service
+    string id = 1;
+    // The name of the location
+    string company_name = 2;
+    // The postal address of the location
+    string address = 3;
+    // This typically refers to a city, but may refer to a suburb or a neighborhood in certain countries
+    string locality = 4;
+    // The state or territory abbreviation
+    string state = 5;
+    // The country code
+    string country = 6;
+    // A string specifying the zip code or postal code
+    string zip_code = 7;
+    // A location on the Earth specified by a latitude and longitude
+    Geo point = 8;
+    // The website of the location
+    string website = 9;
+    // The primary phone number of the location
+    string phone = 10;
+    // The url location of where you can find the location on the internet
+    string url = 11;
+}
+
+// A request to perform a search on behalf of a business
+message SearchRequest {
+    string company_name = 1;
+    string address = 2;
+    string locality = 3; 
+    string state = 4;
+    string country = 5;
+    string zip_code = 6;
+    string phone = 7;
+    Geo location = 8;
+}
+
+// SearchResponse returns the location data that was found for the related search request
+message SearchResponse {
+    repeated Location locations = 1;
+}
+
+// A request to lookup details of a business
+message GetRequest {
+    // The id that represents the location within the underlying service
+    string id = 1;
+}
+
+// GetResponse returns the location data for the related get request
+message GetResponse {
+    Location location = 1;
+}
+
+// SearchAdapter is a grpc service that must be implemented by an application that acts as an adapter to an API (EG: BingMapsAPI)
+service SearchAdapter {
+    rpc Search (SearchRequest) returns (SearchResponse) {};
+    rpc Get (GetRequest) returns (GetResponse) {};
+}

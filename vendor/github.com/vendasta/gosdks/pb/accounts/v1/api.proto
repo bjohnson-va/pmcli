@@ -1,0 +1,355 @@
+syntax = "proto3";
+
+package accounts.v1;
+
+option java_package = "com.vendasta.accounts.v1";
+option java_outer_classname = "AccountsProtos";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "accounts/v1/addons.proto";
+import "accounts/v1/blame.proto";
+
+
+// Account is a representation of an activation in the Vendasta platform.
+// An activation exists in two states, an "active" state where it is available to
+// the purchaser, or a "deactivated" state where it's deactivated time is in the past.
+// Once an addon is deactivated, it is immutable moving forward.
+message Account {
+    // The unique identifier of the account in the application that corresponds to the business
+    string account_id = 1;
+    // The business ID.
+    string business_id = 2;
+    // The partner ID.
+    string partner_id = 3;
+    // The unique identifier for the application being created.
+    string product_id = 4;
+    // The marketplace application ID.
+    string app_id = 5;
+    // The custom entry url for the application.
+    string custom_entry_url = 6;
+    // The email for the user who filled out the form.
+    string user_contact_email = 7;
+    // The activation time of the account.
+    google.protobuf.Timestamp activation = 8;
+    // The deactivation time for the account.
+    google.protobuf.Timestamp deactivation = 9;
+    // Whether or not the account is a trial account.
+    bool trial = 10;
+    // The order form submission id, unique per activation.
+    string order_form_submission_id = 11;
+    // Metadata and source for the activation event
+    Blame activation_info = 12;
+    // Metadata and source for the deactivation event
+    Blame deactivation_info = 13;
+}
+
+// PendingActivation is a representation of a pending activation in the Vendasta platform.
+// A pending activation remains pending until a "vendor" either rejects or approves the activation
+message PendingActivation {
+    enum Status {
+        PENDING = 0;
+        APPROVED = 1;
+        REJECTED = 2;
+    }
+    // The unique identifier for an activation and pending activation
+    string activation_id = 1;
+    // The business identifier that this pending activation is for
+    string business_id = 2;
+    // The status of the pending activation
+    Status status = 3;
+    // The reason for a rejected pending activation
+    string rejected_reason = 4;
+    // Who dismissed the pending activation
+    string dismissed_by = 5;
+    // Date the pending activation was created
+    google.protobuf.Timestamp created_date = 6;
+    // Date the pending activation was last updated
+    google.protobuf.Timestamp updated_date = 7;
+    // Either its a pending activation for an app or addon
+    oneof activation {
+        // The app activation for this pending activation
+        Account app_activation = 8;
+        // The addon activation for this pending activation
+        AddonActivation addon_activation = 9;
+    }
+    // Identifier for the app/product that the pending activation is for
+    string app_id = 10;
+}
+
+message ActivateAddonRequest {
+    // The business ID.
+    string business_id = 1;
+    // The marketplace application ID.
+    string app_id = 2;
+    // The marketplace addon ID.
+    string addon_id = 3;
+    // The partner ID. Not required if you are authenticating as a partner user.
+    string partner_id = 4;
+    // The order form submission id, unique per activation.
+    string order_form_submission_id = 5;
+    // The time of Activation
+    google.protobuf.Timestamp activate_on = 6;
+    // The time to trigger account deactivation.
+    google.protobuf.Timestamp deactivate_on = 7;
+    // The blame information for this action
+    Blame activation_info = 8;
+}
+
+message DeactivateAddonRequest {
+    // The business ID.
+    string business_id = 1;
+    // The marketplace application ID.
+    string app_id = 2;
+    // The marketplace addon ID.
+    string addon_id = 3;
+    // The activation ID that was given when the addon was activated.
+    string activation_id = 4;
+    // The partner ID. Not required if you are authenticating as a partner user.
+    string partner_id = 5;
+    // The blame information for this action
+    Blame deactivation_info = 6;
+}
+
+message ActivateAppRequest {
+    // The business ID.
+    string business_id = 1;
+    // The marketplace application ID.
+    string app_id = 2;
+    // The partner ID. Not required if you are authenticating as a partner user.
+    string partner_id = 3;
+    // The order form submission id, unique per activation.
+    string order_form_submission_id = 4;
+    // The time of Activation
+    google.protobuf.Timestamp activate_on = 5;
+    // The time to trigger account deactivation.
+    google.protobuf.Timestamp deactivate_on = 6;
+    // Activate trial version
+    bool trial = 7;
+    // The blame information for this action
+    Blame activation_info = 8;
+}
+
+message DeactivateAppRequest {
+    // The business ID.
+    string business_id = 1;
+    // The marketplace application ID.
+    string app_id = 2;
+    // The blame information for this action
+    Blame deactivation_info = 3;
+}
+
+message ListAddonActivationsRequest {
+    // The business ID.
+    string business_id = 1;
+    // The marketplace application ID.
+    string app_id = 2;
+}
+
+message ListAddonActivationsResponse {
+    // A list of addon activations
+    repeated AddonActivation activations = 1;
+}
+
+message CreateRequest {
+    // The business ID.
+    string business_id = 1;
+    // The unique identifier of the account in the application that corresponds to the business.
+    string account_id = 2;
+    // The marketplace application ID.
+    string app_id = 3;
+    // The unique identifier for the application being created.
+    string product_id = 4;
+    // The custom entry url for the application.
+    string custom_entry_url = 5;
+    // The email for the user who filled out the form.
+    string user_contact_email = 6;
+    // Whether or not the account is a trial account.
+    bool trial = 7;
+    // The time to trigger account deactivation.
+    google.protobuf.Timestamp deactivate_on = 8;
+    // The order form submission id, unique per activation.
+    string order_form_submission_id = 9;
+}
+
+message GetRequest {
+    // The business ID.
+    string business_id = 1;
+    // The marketplace application ID.
+    string app_id = 2;
+    // Deprecated: The unique identifier of the account in the application that corresponds to the business
+    string account_id = 3;
+    // Deprecated: The unique identifier for the legacy Vendasta application being retrieved
+    string product_id = 4;
+    // Optional id of the partner
+    string partner_id = 5;
+}
+
+message ListRequest {
+    // The business ID.
+    string business_id = 1;
+    // A cursor to be provided when fetching additional pages of results beyond the first
+    string cursor = 2;
+    // Size of the page to return
+    int64 page_size = 3;
+    // Optional id of the partner
+    string partner_id = 4;
+}
+
+message DeleteRequest {
+    // The business ID.
+    string business_id = 1;
+    // The marketplace application ID.
+    string app_id = 2;
+    // Deprecated: The unique identifier of the account in the application that corresponds to the business
+    string account_id = 3;
+    // Deprecated: The unique identifier for the legacy Vendasta application being deleted
+    string product_id = 4;
+    // The blame information for this action
+    Blame deactivation_info = 5;
+}
+
+message UpdateExpiryRequest {
+    // The business ID.
+    string business_id = 1;
+    // The marketplace application ID.
+    string app_id = 2;
+    // The unique identifier of the account in the application that corresponds to the business
+    string account_id = 3;
+    // The time to trigger account deactivation.
+    google.protobuf.Timestamp deactivate_on = 4;
+    // Deprecated: The unique identifier for the legacy Vendasta application being updated
+    string product_id = 5;
+}
+
+message SetAutoRenewRequest {
+    // The business ID.
+    string business_id = 1;
+    // The app ID.
+    string app_id = 2;
+    // The addon ID.
+    string addon_id = 3;
+    // The state of auto renewal
+    RenewalState renewal_state = 4;
+}
+
+message DismissPendingActivationRequest {
+    // The ID of the pending activation
+    string activation_id = 1;
+    // Who is dismissing the pending activation
+    string dismissed_by = 2;
+    // The business ID of the pending activation
+    string business_id = 3;
+    // The app id of the pending activation
+    string app_id = 4;
+    // The addon id of the pending activation, optional
+    string addon_id = 5;
+}
+
+message ResolvePendingActivationRequest {
+    // The ID of the pending activation
+    string activation_id = 1;
+    // True for approved, False for rejected
+    bool approved = 2;
+    // Reason for a rejection
+    string rejected_reason = 3;
+    // The external account identifier of the successfully activated account
+    string account_id = 4;
+    // The business ID of the pending activation
+    string business_id = 5;
+    // The app id of the pending activation
+    string app_id = 6;
+    // The addon id of the pending activation, optional
+    string addon_id = 7;
+}
+
+message ListPendingActivationRequest {
+    // The business ID you want a list of all pending activations for
+    string business_id = 1;
+}
+
+message ListPendingActivationResponse {
+    // A list of pending activations
+    repeated PendingActivation pending_activations = 1;
+}
+
+message ActivateAddonResponse {
+    // A unique ID assigned for this specific addon activation.
+    string activation_id = 1;
+    // The order form submission id, unique per activation.
+    string order_form_submission_id = 2;
+}
+
+message ActivateAppResponse {
+    // The unique identifier of the account in the application that corresponds to the business
+    string account_id = 1;
+    // A unique ID assigned for this specific app activation.
+    string activation_id = 2;
+}
+
+message CreateResponse {
+    // A unique ID assigned for this specific app activation.
+    string activation_id = 1;
+    // The order form submission id, unique per activation.
+    string order_form_submission_id = 2;
+}
+
+message GetResponse {
+    // The Account identifier
+    Account account = 1;
+}
+
+message ListResponse {
+    // A list of accounts
+    repeated Account accounts = 1;
+    // A cursor for the next page of results
+    string next_cursor = 2;
+    // A flag to indicate there are more pages
+    bool has_more = 3;
+    // The total number of results
+    int64 total_results = 4;
+}
+
+enum RenewalState {
+    ON = 0;
+    OFF = 1;
+}
+
+// Accounts Service manages business account and addon activations and deactivations.
+service AccountsService {
+    // ActivateAddon activates a marketplace addon on an account.
+    rpc ActivateAddon(ActivateAddonRequest) returns (ActivateAddonResponse) {}
+    // DeactivateAddon deactivates a marketplace addon on an account.
+    rpc DeactivateAddon(DeactivateAddonRequest) returns (google.protobuf.Empty) {}
+    // ActivateApp is used to activate a marketplace app on a business
+    rpc ActivateApp(ActivateAppRequest) returns (ActivateAppResponse);
+    // DeactivateApp is used to deactivate a marketplace app on a business
+    rpc DeactivateApp(DeactivateAppRequest) returns (google.protobuf.Empty);
+
+    // ListAddonActivations gets activations of an app's add-ons for a business
+    rpc ListAddonActivations(ListAddonActivationsRequest) returns (ListAddonActivationsResponse);
+    // Deprecated: Create is used to activate an account.
+    rpc Create(CreateRequest) returns (CreateResponse);
+    // Deprecated: Delete is used to do a hard delete on an account.
+    rpc Delete(DeleteRequest) returns (google.protobuf.Empty);
+
+    // Get is used to get an account.
+    rpc Get(GetRequest) returns (GetResponse);
+    // List is used to lookup a list of accounts.
+    rpc List(ListRequest) returns (ListResponse);
+    // Deprecated: UpdateExpiry is used to expire an account.
+    rpc UpdateExpiry(UpdateExpiryRequest) returns (google.protobuf.Empty);
+
+    // DismissPendingActivation sets the dismissed flag and dismissed_by string
+    rpc DismissPendingActivation(DismissPendingActivationRequest) returns (google.protobuf.Empty);
+    // ResolvePendingActivation is used to accept or reject a pending activation
+    rpc ResolvePendingActivation(ResolvePendingActivationRequest) returns (google.protobuf.Empty);
+    // ListPendingActivations gets pending activations for a business
+    rpc ListPendingActivations(ListPendingActivationRequest) returns (ListPendingActivationResponse);
+}
+
+// Fulfillment Service manages the information update about accounts
+service FulfillmentService {
+    // SetAutoRenew is used to update or set the state.
+    rpc SetAutoRenew(SetAutoRenewRequest) returns (google.protobuf.Empty) {};
+}

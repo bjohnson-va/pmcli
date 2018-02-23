@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package executivereport.v1;
+
+import "executive_report/v1/executive_report.proto";
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+// Accepts Executive Report data
+//
+// These endpoints will accept a form of structured data.
+
+service ExecutiveReport {
+    // Accept data for a report.
+    rpc CreateReportData (ReportDataRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/report-data/create"
+            body: "*"
+        };
+    };
+
+    // List data for a report category.
+    rpc ListReportData (ListReportDataRequest) returns (ListReportDataPagedResponse) {
+        option (google.api.http) = {
+            post: "/v1/report-data/list"
+            body: "*"
+        };
+    };
+
+    // List all dates (weekly/monthly) for a time period
+    rpc ListReportDates (ListReportDatesRequest) returns (ListReportDatesResponse) {
+        option (google.api.http) = {
+            post: "/v1/report-date/list"
+            body: "*"
+        };
+    };
+}

@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package sso.v1;
+
+option java_package = "com.vendasta.sso.v1";
+option java_outer_classname = "ServiceProvider";
+
+message GetSSOUrlsRequest {
+    // The ID of the app the to get the SSO urls for.    
+    string app_id = 1;
+}
+
+message GetSSOUrlsResponse {
+    // The entry URL of the service provider.
+    string entry_url = 1;
+    // The session transfer URL of the service provider.
+    string session_url = 2;
+}
+
+message SetSSOUrlsRequest {
+    // The ID of the service provider the to get the SSO urls for.    
+    string service_provider_id = 1;
+    // The entry URL of the service provider.
+    string entry_url = 2;
+    // The session transfer URL of the service provider.
+    string session_url = 3;
+}
+
+// The service context is used to determine which identity provider to use. This context is used in conjunction with
+// the identity context, provided by the identity provider. The two contexts require domain logic to be glued together; 
+// for example, when the service provider provides an account, we can determine the partner from that account, then 
+// match that up to an identity provider Partner context.
+message ServiceContext {
+    message Account {
+        string account_id = 1;
+    }
+
+    message Partner {
+        string partner_id = 1;
+    }
+
+    oneof context {
+        Account account = 1;
+        Partner partner = 2;
+    }
+}
+
+message GetSessionTransferURLRequest {
+    // An ID unique to a service/application (such as a marketplace application ID)
+    string service_provider_id = 1;
+    // The service context.
+    ServiceContext context = 2;
+}
+
+message GetSessionTransferURLResponse {
+    // The session transfer URL to send the user to (which may result in a redirect to a login screen).
+    string session_transfer_url = 1;
+}

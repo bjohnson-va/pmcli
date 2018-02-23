@@ -1,0 +1,183 @@
+syntax = "proto3";
+
+package marketplace_packages.v1;
+
+import "marketplace_packages/v1/package.proto";
+import "marketplace_packages/v1/product.proto";
+import "marketplace_packages/v1/addon.proto";
+
+// Request all packages matching provided values
+message ListPackagesRequest {
+    // The ID of the partner who we are getting packages for
+    string partner_id = 1;
+
+    // The ID of the market we are getting the package for
+    string market_id = 2;
+
+    // LMI Category that this package belongs to
+    Lmi.Categories lmi_category = 3;
+
+    // List of the statuses of the products in the package
+    repeated Statuses.Status statuses = 4;
+
+    // Use partner configurated custom order
+    bool sort = 5;
+
+    // Number of packages returned
+    int32 page_size = 6;
+
+    // Page of results that we are on
+    string cursor = 7;
+}
+
+message ListPackagesResponse {
+    // List of the packages that are available
+    repeated Package packages = 1;
+
+    // Page of results that we are on
+    string next_cursor = 2;
+
+    // Are there more pages?
+    bool has_more = 3;
+
+}
+
+// Filters for the list products end point. 
+message ListProductFilter {
+    // only return approved Products, used to filter out products that have lost approval
+    bool approved = 1; 
+}
+
+// Request all products for partner id
+message ListProductsRequest {
+    // The ID of the partner
+    string partner_id = 1;
+
+    // Number of products returned
+    int32 page_size = 2;
+
+    // Page of results that we are on
+    string cursor = 3;
+
+    // Market ID for whitelabeling
+    string market_id = 4;
+
+    // filters
+    ListProductFilter filters = 5;
+}
+
+message ListProductsResponse {
+    // The Products for a partner
+    repeated Product products = 1;
+
+    // Page of results that we are on
+    string next_cursor = 2;
+
+    // Is there more pages?
+    bool has_more = 3;
+}
+
+// Request all products for partner id
+message ListAddonsRequest {
+    // The ID of the partner
+    string partner_id = 1;
+
+    // The IDs of the Apps
+    repeated string app_ids = 2;
+
+    // Number of addons returned
+    int32 page_size = 3;
+
+    // Page of results that we are on
+    string cursor = 4;
+}
+
+message ListAddonsResponse {
+    // The Addons for a partner
+    repeated Addon addons = 1;
+
+    // Page of results that we are on
+    string next_cursor = 2;
+
+    // Is there more pages?
+    bool has_more = 3;
+}
+
+message GetMultiProductsRequest {
+    // The ID of the partner
+    string partner_id = 1;
+
+    // The IDs of the products to get
+    repeated string product_ids = 2;
+
+    // The MarketID to apply white labeling for, if non is provided we will white label at a partner level
+    string market_id = 3;
+}
+
+message GetMultiProductsResponse {
+    message ProductContainer {
+        Product product = 1;
+    }
+
+    // The list of requested Products
+    repeated ProductContainer products = 1;
+}
+
+message ListAppIDsRequest {
+    // The id of the partner
+    string partner_id = 1;
+}
+
+message ListAppIDsResponse {
+    // the list of AppIDs that are visible to a partner
+    repeated string app_ids = 1;
+}
+
+message GetMultiAddonsRequest {
+    // list of addon key which contains a appId and addonId
+    repeated AddonKey addon_keys = 1;
+}
+
+message GetMultiAddonsResponse {
+    // list of addons for above data
+    repeated Addon addons = 1;
+}
+
+message GetMultiPackageRequest {
+    // Package ID to lookup by
+    repeated string package_ids = 1;
+}
+
+message GetMultiPackageResponse {
+    message PackageContainer {
+        Package package = 1;
+    }
+
+    // Packages found in lookup
+    repeated PackageContainer package_containers = 1;
+}
+
+// The service to interact with a partner's packages and products
+service MarketplacePackages {
+    // List products for a partner
+    rpc ListProducts (ListProductsRequest) returns (ListProductsResponse) {};
+
+    // Get products for a partner by ID
+    rpc GetMultiProducts (GetMultiProductsRequest) returns (GetMultiProductsResponse) {};
+
+    // List packages for a partner market
+    rpc ListPackages (ListPackagesRequest) returns (ListPackagesResponse) {};
+
+    // List of products that are visible to a partner
+    rpc ListAppIDs (ListAppIDsRequest) returns (ListAppIDsResponse) {};
+
+    // Get multiple addons by key
+    rpc GetMultiAddons (GetMultiAddonsRequest) returns (GetMultiAddonsResponse) {};
+
+    // List addons for a partner
+    rpc ListAddons (ListAddonsRequest) returns (ListAddonsResponse) {};
+
+    // Get Package by package/solution ID
+    rpc GetMultiPackages (GetMultiPackageRequest) returns (GetMultiPackageResponse) {};
+
+}

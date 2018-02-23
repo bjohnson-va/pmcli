@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package medicalcompare.v1;
+
+import "google/protobuf/timestamp.proto";
+import "medical_compare/v1/answer.proto";
+
+// A SurveyMeasure is a grouping of statistics gathered from the measures to provide insights
+message SurveyMeasure {
+    // The technical title of the survey measure
+    string title = 1;
+    // The linear mean score of a measure for a provider
+    int64 linear_mean_score = 2;
+    // The star rating of a measure for a provider
+    float star_rating = 3;
+    // The star rating footnote
+    string star_rating_footnote = 7;
+    // The different answers for this measure
+    repeated Answer answers = 8;
+    // A SurveyMeasure can have multiple questions plus a star rating and linear mean score. The type is what groups these together into on SurveyMeasure
+    MeasureType type = 9;
+    // The the data of which this data was started to be collected (end date is 3 months after)
+    google.protobuf.Timestamp start_date = 10;
+
+}
+
+// The possible types of a SurveyMeasure. Not all surveys have a SurveyMeasure for each MeasureType
+enum MeasureType {
+    NONE = 0;
+    // Communication with nurses
+    H_COMP_1 = 1;
+    // Communication with doctors
+    H_COMP_2 = 2;
+    // Responsiveness of hospital staff
+    H_COMP_3 = 3;
+    // Pain management
+    H_COMP_4 = 4;
+    // Communication about medicines
+    H_COMP_5 = 5;
+    // Cleanliness of hospital environment
+    H_CLEAN = 6;
+    // Quietness of hospital environment
+    H_QUIET = 7;
+    // Discharge information
+    H_COMP_6 = 8;
+    // Care Transition
+    H_COMP_7 = 9;
+    // Overall rating of hospital
+    H_HSP_RATING = 10;
+    // Willingness to recommend the hospital
+    H_RECMND = 11;
+}

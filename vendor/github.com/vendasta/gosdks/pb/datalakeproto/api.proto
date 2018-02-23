@@ -1,0 +1,151 @@
+// version: 1.2.0
+// Proto definition for the Datalake microservice API interface
+// 1.3.0 - Add GetListingByUrl endpoint
+// 1.2.0 - Add an endpoint to kick off a listing stats push to our stat tracking system.
+// 1.1.0 - Add delete request
+// 1.0.0 - Initial Release
+
+syntax = "proto3";
+
+package datalakeproto;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "datalakeproto/listing.proto";
+import "datalakeproto/review.proto";
+
+message GetListingRequest {
+    string raw_listing_id = 1;
+    string external_id = 2;
+    int64 source_id = 3;
+}
+
+message GetListingByUrlRequest {
+    string url = 1;
+    int64 source_id = 2;
+}
+
+message GetListingResponse {
+    datalakeproto.RawListing listing = 1;
+}
+
+message ReplaceListingRequest {
+    datalakeproto.RawListing listing = 1;
+}
+
+message GetListingMetadataRequest {}
+
+message SourceStatistic {
+    int64 source_id = 1;
+    int64 listing_count = 2;
+}
+
+message GetListingMetadataResponse {
+    repeated SourceStatistic sources = 1;
+}
+
+//Request to get all source Ids that exist in the datalake
+message GetSourceIdsRequest {}
+
+//Response includes all of the source_ids that exist in the datalake
+message GetSourceIdsResponse{
+    repeated int64 source_ids = 1;
+}
+
+message SearchListingsRequest {
+    string company_name = 1;
+    string state = 2;
+    string zipcode = 3;
+    string phone = 4;
+    string address = 5;
+    int64 source_id = 6;
+    reserved 7;
+    int64 page_size = 8;
+    string city = 9;
+    string cursor = 10;
+    double latitude = 11;
+    double longitude = 12;
+}
+
+message SearchListingsResponse {
+    repeated datalakeproto.RawListing results = 1;
+    reserved 2;
+    bool has_more = 3;
+    string cursor = 4;
+}
+
+message GetListingStatsRequest{
+
+}
+
+message GetListingStatsResponse {
+    repeated SourceStats replaced_per_day = 1;
+    repeated SourceStats total_per_day = 2;
+}
+
+message DeleteListingRequest {
+    string listing_id = 1;
+}
+
+message SourceStats {
+    int64 source_id = 1;
+    repeated StatPoint stat_points = 2;
+}
+
+message StatPoint {
+    google.protobuf.Timestamp date = 1;
+    int64 value = 2;
+}
+
+
+message GetReviewRequest {
+    string review_id = 1;
+}
+
+message GetReviewResponse {
+    datalakeproto.Review review = 1;
+}
+
+message ReplaceReviewRequest {
+    datalakeproto.Review review = 1;
+}
+
+message ListReviewsRequest {
+    string listing_id = 1;
+    string cursor = 3;
+    int64 page_size = 4;
+    reserved 2, 5;
+}
+
+message ListReviewsResponse {
+    repeated datalakeproto.Review reviews = 1;
+    string cursor = 2;
+    bool has_more = 3;
+    int64 total_number_of_reviews = 4;
+}
+
+message DeleteReviewRequest {
+    string review_id = 1;
+}
+
+message PushListingMetricsRequest {
+
+}
+
+service DataLake {
+    rpc GetListing (GetListingRequest) returns (GetListingResponse) {};
+    rpc GetListingByURL (GetListingByUrlRequest) returns (GetListingResponse) {};
+    rpc ReplaceListing (ReplaceListingRequest) returns (google.protobuf.Empty) {};
+    rpc SearchListings (SearchListingsRequest) returns (SearchListingsResponse) {};
+    rpc GetListingMetadata (GetListingMetadataRequest) returns (GetListingMetadataResponse) {};
+    rpc GetSourceIds (GetSourceIdsRequest) returns (GetSourceIdsResponse) {};
+    rpc GetListingStats (GetListingStatsRequest) returns (GetListingStatsResponse) {};
+    rpc DeleteListing (DeleteListingRequest) returns (google.protobuf.Empty) {};
+    rpc PushListingMetrics (PushListingMetricsRequest) returns (google.protobuf.Empty) {};
+
+    rpc GetReview (GetReviewRequest) returns (GetReviewResponse) {};
+    rpc ReplaceReview (ReplaceReviewRequest) returns (google.protobuf.Empty) {};
+    rpc ListReviews (ListReviewsRequest) returns (ListReviewsResponse) {};
+    rpc DeleteReview (DeleteReviewRequest) returns (google.protobuf.Empty) {};
+
+}

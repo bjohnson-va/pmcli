@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+package vstorepb;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+import "vstorepb/common.proto";
+
+message Entity {
+    string namespace = 1;
+    string kind = 2;
+    google.protobuf.Any data = 3;
+    int64 version = 4;
+    Struct values = 5;
+}
+
+message Struct {
+    map<string, Value> values = 1;
+}
+
+message ListValue {
+    repeated Value values = 1;
+}
+
+message Value {
+    oneof kind {
+
+        // Represents a int64 value
+        int64 int_value = 2;
+
+        // Represents a double value.
+        double double_value = 3;
+
+        // Represents a string value.
+        string string_value = 4;
+
+        // Represents a boolean value.
+        bool bool_value = 5;
+
+        // Represents a structured value.
+        Struct struct_value = 6;
+
+        // Represents a timestamp value.
+        google.protobuf.Timestamp timestamp_value = 7;
+
+        // Represents a repeated `Value`.
+        ListValue list_value = 8;
+
+        vstorepb.GeoPoint geopoint_value = 9;
+
+        bytes bytes_value = 10;
+    }
+}
+
+message KeySet {
+    string namespace = 1;
+    string kind = 2;
+    repeated string keys = 3;
+}
+
+message CreateRequest {
+    Entity entity = 1;
+}
+
+message GetRequest {
+    repeated KeySet key_sets = 1;
+}
+
+message GetResponse {
+    repeated EntityResult entities = 1;
+}
+
+message UpdateRequest {
+    Entity entity = 1;
+}
+
+message EntityResult {
+    KeySet key_set = 1;
+    Entity entity = 2;
+}
+
+message KeyFilter {
+    // Keys to filter by. You must always provide parent key components if you provide any children.
+    // eg: keys = [PID, AG-123], rows PID:AG-123:* are matches, but if keys = [AG-123] or ["", AG-123], you will not get any matches.
+    repeated string keys = 1;
+    // if prefix is set to True, the filter will match an incomplete prefix on the last specified key
+    // eg: keys = [PID, AG-4], row PID:AG-456 is a match with partial == true, not a match otherwise
+    bool prefix = 2;
+}
+
+// RangeFilter will bound results by [begin, end)
+message RangeFilter {
+    // Key set to start filtering from.
+    repeated string begin = 1;
+    // Key set to stop filtering at.
+    repeated string end = 2;
+}
+
+message LookupFilter {
+    // Deprecated: use `filters` instead
+    repeated string keys = 1 [deprecated=true];
+
+    oneof filters {
+        KeyFilter key_filter = 2;
+        RangeFilter range_filter = 3;
+    }
+}
+
+message LookupRequest {
+    string namespace = 1;
+    string kind = 2;
+    int64 page_size = 3;
+    string cursor = 4;
+    LookupFilter filter = 5;
+}
+
+message LookupResponse {
+    repeated EntityResult entities = 1;
+    string next_cursor = 2;
+    bool has_more = 3;
+}
+
+message ScanRequest {
+    string namespace = 1;
+    string kind = 2;
+    LookupFilter filter = 3;
+    KeySet starting_key_set = 4;
+}
+
+service VStore {
+    rpc Create (CreateRequest) returns (google.protobuf.Empty) {
+    };
+    rpc Get (GetRequest) returns (GetResponse) {
+    };
+    rpc Lookup (LookupRequest) returns (LookupResponse) {
+    };
+    rpc Update (UpdateRequest) returns (google.protobuf.Empty) {
+    };
+    rpc Scan(ScanRequest) returns (stream EntityResult){
+    };
+}

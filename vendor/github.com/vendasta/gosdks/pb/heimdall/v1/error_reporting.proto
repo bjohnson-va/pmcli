@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package heimdall.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message User {
+    // Unique identifier for the user
+    string id = 1;
+    // Email address of the user
+    string email = 2;
+    // Name for the user
+    string username = 3;
+    // The users IP address
+    string ip_address =4;
+}
+
+message Request {
+    // Http headers for the request
+    map<string, string> headers = 1;
+    // Url of the request
+    string url = 2;
+}
+
+message Exception {
+    // The type of the exception
+    string type = 1;
+    // A value for the exception
+    string value = 2;
+    // The package or module which the exception belongs to
+    string module = 3;
+    // Stacktrace for the exception
+    Stacktrace stacktrace = 4;
+}
+
+message Stacktrace {
+    message Frame {
+        // The relative filepath to the call
+        string filename = 1;
+        // The line number in the file
+        string line_number = 2;
+        // The column number in the line of the file
+        string col_number = 3;
+        // The name of the function being called
+        string function = 4;
+        // Whether this call orginated in applicaiton code and is relevant to the stack trace
+        bool in_app = 5;
+    }
+    // The list of frames that comprise the stack trace
+    repeated Frame frames = 1;
+}
+
+message Breadcrumb {
+    // A timestamp representing when the breadcrumb occurred
+    google.protobuf.Timestamp timestamp = 1;
+    // The type of event the breadcrumb is for, eg Navigation or Http
+    string type = 2;
+    // A message describing the breadcrumb
+    string message = 3;
+    // Data associated with this breadcrumb
+    map<string, string> data = 4;
+    // Categories are dotted strings that indicate what the crumb is or where it comes from.
+    // Typically it’s a module name or a descriptive string. For instance ui.click could be
+    // used to indicate that a click happend in the UI or flask could be used to indicate that
+    // the event originated in the Flask framework.
+    string category = 5;
+}
+
+message ErrorReport {
+    // Hexadecimal string representing a uuid4 value
+    string event_id = 1;
+    // The name of the project this report is created for, eg. business-center-client
+    string project = 2;
+    // The name of the environment that created this report, eg. production
+    string environment = 3;
+    // The release this error occured in. For projects that use vstatic this would be the deployment id
+    string release = 4;
+    // The language of the program that generated this error, eg javascript, go
+    string platform = 5;
+    // A timestamp representing when the error occured
+    google.protobuf.Timestamp timestamp = 6;
+    // An object containing information relevant for when the error occur during an http request
+    Request request = 7;
+    // Information about the exception that occured
+    Exception exception = 8;
+    // A message used to provide details of this error
+    string message = 9;
+    // The stacktrace for when this error occured
+    Stacktrace stack_trace = 10;
+    // Breadcrumbs to provide info for what the user was doing prior to the error
+    repeated Breadcrumb breadcrumbs = 11;
+    // Information about the user that the error occured for
+    User user = 12;
+    // Arbitray map of extra information to include with the report
+    map<string, string> extra = 13;
+}

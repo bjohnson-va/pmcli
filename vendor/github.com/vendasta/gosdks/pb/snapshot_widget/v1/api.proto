@@ -1,0 +1,395 @@
+syntax = "proto3";
+
+package snapshotwidget.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+// Style attributes for a snapshot widget
+message WidgetStyles {
+    // Width of the widget
+    float width = 1;
+    // Background color of the widget
+    string background_color = 2;
+    // Border color around the widget
+    string border_color = 3;
+    // Border radius around the widget
+    float border_radius = 4;
+    // Boolean indicating whether or not a drop shadow should be included in the rendered widget
+    bool drop_shadow = 5;
+    // Primary font color of the widget
+    string primary_font_color = 6;
+    // Secondary font color of the widget
+    string secondary_font_color = 7;
+    // Button color in the widget
+    string button_color = 8;
+    // Button font color in the widget
+    string button_font_color = 9;
+    // Title text for first page
+    string title_text = 10;
+    // Button text for submitting
+    string button_text = 11;
+}
+
+// A snapshot widget
+message SnapshotWidget {
+    // Reserved fields
+    reserved 7;
+
+    // A unique identifier for the widget
+    string widget_id = 1;
+    // An identifier for the partner
+    string partner_id = 2;
+    // An identifier for the market the accounts created by the widget will be assigned to
+    string market_id = 3;
+    // An identifier for the campaign that should be started for accounts created via the widget
+    string campaign_id = 4;
+    // The name of the widget
+    string name = 5;
+    // Identifiers for the salespeople who will be assigned accounts created by the widget
+    repeated string salesperson_ids = 6;
+    // An API key that is used in conjunction with the domain to validate API calls from the widget
+    string api_key = 8;
+    // The style attributes for the widget
+    WidgetStyles styles = 9;
+
+    // Delete UTC timestamp
+    google.protobuf.Timestamp deleted = 10;
+    // Created UTC timestamp
+    google.protobuf.Timestamp created = 11;
+    // Updated UTC timestamp
+    google.protobuf.Timestamp updated = 12;
+
+    // The number of accounts created by this widget
+    int64 accounts_created = 13;
+
+    // Whether the widget is disabled
+    bool disabled = 14;
+}
+
+// A single autocomplete prediction
+message AutocompletePrediction {
+    // Details of a place with name and address
+    string description = 1;
+    // Google place id
+    string place_id = 2;
+    // Main text of the prediction, likely the business name
+    string main_text = 3;
+    // Secondary text of the prediction, likely the business address
+    string secondary_text = 4;
+}
+
+// A latitude/longitude location
+message Location {
+    // Latitude of a location
+    float latitude = 1;
+    // Longitude of a location
+    float longitude = 2;
+}
+
+// *******************
+// Requests
+// *******************
+// A request for creating a new snapshot widget
+message CreateSnapshotWidgetRequest {
+    // Reserved fields
+    reserved 6;
+
+    // An identifier for the partner the accounts created by the widget will be assigned to
+    string partner_id = 1;
+    // An identifier for the market the accounts created by the widget will be assigned to
+    string market_id = 2;
+    // An identifier for the campaign that should be started for accounts created via the widget
+    string campaign_id = 3;
+    // The name of the widget
+    string name = 4;
+    // Identifiers for the salespeople who will be assigned accounts created by the widget
+    repeated string salesperson_ids = 5;
+    // Whether the widget is disabled
+    bool disabled = 7;
+}
+
+// A request for retrieving a single snapshot widget
+message GetSnapshotWidgetRequest {
+    // A unique identifier for the widget
+    string widget_id = 1;
+    // An identifier for the partner the widget belong to
+    string partner_id = 2;
+}
+
+// A request to update a snapshot widget
+message UpdateSnapshotWidgetRequest {
+    // Reserved fields
+    reserved 7;
+    
+    // A unique identifier for the widget
+    string widget_id = 1;
+    // An identifier for the partner
+    string partner_id = 2;
+    // An identifier for the market the accounts created by the widget will be assigned to
+    string market_id = 3;
+    // An identifier for the campaign that should be started for accounts created via the widget
+    string campaign_id = 4;
+    // The name of the widget
+    string name = 5;
+    // Identifiers for the salespeople who will be assigned accounts created by the widget
+    repeated string salesperson_ids = 6;
+    // The style attributes for the widget
+    WidgetStyles styles = 8;
+    // Whether the widget is disabled
+    bool disabled = 9;
+}
+
+// A request to delete a single snapshot widget
+message DeleteSnapshotWidgetRequest {
+    // A unique identifier for the widget
+    string widget_id = 1;
+    // An identifier for the partner the widget belong to
+    string partner_id = 2;
+}
+
+// A request to list snapshot widgets matching some set of filters
+message ListSnapshotWidgetRequest {
+    // Attributes by which to filter the list of snapshot widgets retrieved
+    message Filters {
+        // A partner identifier
+        string partner_id = 1;
+        // A market identifier
+        string market_id = 2;
+    }
+    // The filters to apply to the list request
+    Filters filters = 1;
+    // A cursor to be provided when fetching additional pages of results beyond the first
+    string cursor = 2;
+    // Size of the page to return
+    int64 page_size = 3;
+}
+
+// A request to update the style attributes on a snapshot widget
+message UpdateStylesRequest {
+    // A unique identifier for the widget
+    string widget_id = 1;
+    // An identifier for the partner the widget belongs to
+    string partner_id = 2;
+    // The style attributes to be updated on the widget
+    WidgetStyles styles = 3;
+}
+
+// A request to retrieve the embed code for a snapshot widget
+message GetEmbedCodeRequest {
+    // A unique identifier for the widget
+    string widget_id = 1;
+    // An identifier for the partner the widget belongs to
+    string partner_id = 2;
+    // The style attributes to be included with the embed code
+    WidgetStyles styles = 3;
+}
+
+// A request to fetch autocomplete predictions
+message SnapshotAutocompleteRequest {
+    // A unique identifier for the widget
+    string widget_id = 1;
+    // An identifier for the partner the widget belongs to
+    string partner_id = 2;
+    // The search term to provide autocomplete results for
+    string search_term = 3;
+    // A location to prioritize search results around
+    Location location = 4;
+}
+
+// A request to create a snapshot report from a Google Place ID
+message CreateSnapshotFromPlaceIDRequest {
+    // A unique identifier for the widget
+    string widget_id = 1;
+    // An identifier for the partner the widget belongs to
+    string partner_id = 2;
+    // A Google Place identifier for the business the snapshot is to be created for
+    string place_id = 3;
+    // First name of the contact for the business
+    string contact_first_name = 4;
+    // Email address of the contact for the business
+    string contact_email = 5;
+}
+
+// A request to create a snapshot report
+message CreateSnapshotRequest {
+    // A unique identifier for the widget
+    string widget_id = 1;
+    // An identifier for the partner the widget belongs to
+    string partner_id = 2;
+    // First name of the contact for the business
+    string contact_first_name = 3;
+    // Last name of the contact for the business
+    string contact_last_name = 4;
+    // Email address of the contact for the business
+    string contact_email = 5;
+    // Name of the business
+    string business_name = 6;
+    // Website for the business
+    string website = 7;
+    // Street address of the business
+    string street_address = 8;
+    // City of the business
+    string city = 9;
+    // State of the business
+    string state = 10;
+    // Zip code of the business
+    string zip = 11;
+    // Country of the business
+    string country = 12;
+    // Business category for the business
+    string business_category = 13;
+    // Phone number of the business
+    string phone = 14;
+    // Facebook URL of the business
+    string facebook_url = 15;
+    // Twitter URL of the business
+    string twitter_url = 16;
+}
+
+// A request for retrieving a single snapshot widget configurations
+message GetSnapshotWidgetConfigRequest {
+    // A unique identifier for the widget
+    string widget_id = 1;
+    // An identifier for the partner the widget belong to
+    string partner_id = 2;
+}
+
+// *******************
+// Response
+// *******************
+// Response to a CreateSnapshotWidget request
+message CreateSnapshotWidgetResponse {
+    // A snapshot widget
+    SnapshotWidget snapshot_widget = 1;
+}
+
+// Response to a GetSnapshotWidget request
+message GetSnapshotWidgetResponse {
+    // A snapshot widget
+    SnapshotWidget snapshot_widget = 1;
+}
+
+// Response to a ListSnapshotWidget request
+message ListSnapshotWidgetResponse {
+    // A list of snapshot widgets
+    repeated SnapshotWidget snapshot_widgets = 1;
+    // A cursor for the next page of results
+    string next_cursor = 2;
+    // A flag to indicate there are more pages
+    bool has_more = 3;
+    // The total number of results based on the filter provided
+    int64 total_results = 4;
+}
+
+// Response to a GetEmbedCode request
+message GetEmbedCodeResponse {
+    // The HTML embed code for the widget
+    string embed_code = 1;
+}
+
+// Response to a BusinessAutocomplete request
+message SnapshotAutocompleteResponse {
+    // A list of autocomplete predictions
+    repeated AutocompletePrediction predictions = 1;
+}
+
+// Response to a GetSnapshotWidgetConfig Response
+message GetSnapshotWidgetConfigResponse {
+    enum Status {
+        ENABLED = 0;
+        DISABLED = 1;
+        RATE_LIMITED = 2;
+    }
+    // The style attributes for the widget
+    WidgetStyles styles = 1;
+
+    // The status of the widget
+    Status status = 2;
+}
+
+// Snapshot Widget Services
+service SnapshotWidgetService {
+    // Create a snapshot widget
+    rpc Create(CreateSnapshotWidgetRequest) returns (CreateSnapshotWidgetResponse) {
+        option (google.api.http) = {
+            post: "/v1/snapshot-widget/create"
+            body: "*"
+        };
+    }
+    // Get a snapshot widget
+    rpc Get(GetSnapshotWidgetRequest) returns (GetSnapshotWidgetResponse) {
+        option (google.api.http) = {
+            post: "/v1/snapshot-widget/get"
+            body: "*"
+        };
+    }
+
+    // Update a snapshot widget
+    rpc Update(UpdateSnapshotWidgetRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/snapshot-widget/update"
+            body: "*"
+        };
+    }
+
+    // Delete a snapshot widget
+    rpc Delete(DeleteSnapshotWidgetRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/snapshot-widget/delete"
+            body: "*"
+        };
+    }
+
+    // List snapshot widgets matching some filters
+    rpc List(ListSnapshotWidgetRequest) returns (ListSnapshotWidgetResponse) {
+        option (google.api.http) = {
+            post: "/v1/snapshot-widget/list"
+            body: "*"
+        };
+    }
+
+    // Update the styles of a snapshot widget
+    rpc UpdateStyles(UpdateStylesRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/snapshot-widget/styles/update"
+            body: "*"
+        };
+    }
+
+    // Get the embed code for a widget
+    rpc GetEmbedCode(GetEmbedCodeRequest) returns (GetEmbedCodeResponse) {
+        option (google.api.http) = {
+            post: "/v1/snapshot-widget/embed-code/get"
+            body: "*"
+        };
+    }
+
+    // Get suggested autocomplete results for a search term
+    rpc SnapshotAutocomplete(SnapshotAutocompleteRequest) returns (SnapshotAutocompleteResponse) {
+        option (google.api.http) = {
+            post: "/v1/snapshot/autocomplete"
+            body: "*"
+        };
+    }
+
+    // Create a snapshot from a Google Place ID
+    rpc CreateSnapshotFromPlaceID(CreateSnapshotFromPlaceIDRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/snapshot/create/from-place"
+            body: "*"
+        };
+    }
+
+    // Create a snapshot
+    rpc CreateSnapshot(CreateSnapshotRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/snapshot/create"
+            body: "*"
+        };
+    }
+
+    // Get the Configuration for a snapshot widget
+    rpc GetSnapshotWidgetConfig(GetSnapshotWidgetConfigRequest) returns (GetSnapshotWidgetConfigResponse) {}
+}

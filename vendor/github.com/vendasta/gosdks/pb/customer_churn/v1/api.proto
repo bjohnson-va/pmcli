@@ -1,0 +1,155 @@
+syntax = "proto3";
+
+package customerchurn.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+message PagedResponseMetadata {
+    // A cursor that can be provided to retrieve the next page of results
+    string next_cursor = 1;
+
+    // Whether or not more results exist
+    bool has_more = 2;
+
+    // The total number of results for this query across all pages
+    int64 total_results = 3;
+}
+
+message PagedRequestOptions {
+    // cursor can be passed to retrieve the next page of results keyed by the cursor
+    string cursor = 1;
+
+    // page_size specifies the number of items to return in the next page
+    int64 page_size = 2;
+}
+
+// Predicted by the model, with metadata about the confidence of the predicted value
+message PredictionValue {
+    Metric value = 1;
+    // Describes how confidence of the model in this prediction, between 0 and 1.
+    // The sum of all confidences across all predictions for a single frame is equal to 1.
+    double confidence = 2;
+}
+
+// A Prediction is a set of predicted values
+message Prediction {
+    repeated PredictionValue values = 1;
+    // Priority is a function of the churn likelihood and the value of the customer.
+    double priority = 2;
+}
+
+// Containers to hold repeated primitive values.
+message StringList {
+  repeated string value = 1;
+}
+
+message FloatList {
+  repeated double value = 1 [packed = true];
+}
+
+message BooleanList {
+  repeated bool value = 1;
+}
+
+message Metric {
+    // The value of the metric
+    oneof kind {
+        StringList string_list = 1;
+        BooleanList bool_list = 2;
+        FloatList float_list = 3;
+    }
+}
+
+// PredictionWithMetrics associates a prediction and/or measured target value with the metrics used to make that prediction
+message PredictionWithMetrics {
+    // The result of the prediction based on metrics. This will be empty if the metrics are historical data (used exclusively as training data).
+    map <string, Prediction> predictions = 1;
+    // The actual value for this set of metrics. This will be empty if we have not yet measure the actual value at this time.
+    map <string, Metric> actual = 2;
+    // Metrics used to make the prediction. These represent the inputs to the model.
+    // The string key is the name of the metric.
+    map <string, Metric> metrics = 3;
+    // When this prediction was made. All the metrics used to make the prediction were valid at this time.
+    google.protobuf.Timestamp timestamp = 4;
+    // The customer this prediction was made for
+    string customer_id = 5;
+}
+
+message ListResponse {
+    // helpers for paging over the rpc
+    PagedResponseMetadata paging_metadata = 1;
+    // a list of predictions, actual values, and associated metrics ordered by time
+    repeated PredictionWithMetrics frames = 2;
+}
+
+message ListRequest {
+    // model_id specifies which model you are asking for results for.
+    // It's possible that predictions can be served for many different models for the same customer_id.
+    string model_id = 1;
+
+    // customer_id specifies the identifier of the customer you want to obtain a list of predictions for.
+    // For a partner customer, this is a partner_id like "ABC", but for an SMB customer, it might be a user_id or email.
+    string customer_id = 2;
+    
+    PagedRequestOptions paging_options = 3;
+}
+
+message PrioritizeRequest {
+    // model_id specifies which model you are asking for a prediction for.
+    string model_id = 1;
+
+    // customer_ids scopes the priorization to a finite set of customer_ids.
+    // If this is not provided, priorization happens across all customer_ids.
+    StringList customer_ids = 2;
+
+    PagedRequestOptions paging_options = 3;
+}
+
+message PrioritizeResponse {
+    // helpers for paging over the rpc
+    PagedResponseMetadata paging_metadata = 1;
+    // a list of predictions, actual values, and associated metrics ordered by priority
+    repeated PredictionWithMetrics frames = 2;
+}
+
+message IngestTrainingRequest {
+    // job_id specified the name of the ML Engine job that stores the training data you wish to ingest.
+    string job_id = 1;
+    // model_id specifies which model you are trying to ingest new training data from.
+    string model_id = 2;
+    // model_version specifies which version of the model you are trying to ingest new training data from.
+    string model_version = 3;
+}
+
+message IngestPredictionsRequest {
+    // job_id specified the name of the ML Engine job that generated the predictions you wish to ingest.
+    string job_id = 1;
+    // model_id specifies which model you are trying to ingest new predictions from.
+    string model_id = 2;
+    // model_version specifies which version of the model you are trying to ingest new predictions from.
+    string model_version = 3;
+}
+
+// CustomerChurn serves requests for frontends
+service CustomerChurn {
+    // List pages through both churn predictions and historical data for a specific customer, bundled with the associated metrics for each time period
+    rpc List(ListRequest) returns (ListResponse) {
+    }
+
+    // Prioritize pages through predictions across all customers, or a defined subset of customers for the latest time period, and returns those predictions ordered by priority
+    rpc Prioritize(PrioritizeRequest) returns (PrioritizeResponse) {
+    }
+}
+
+// CustomerChurnAdmin serves requests for administrative purposes that have different auth configurations.
+// These are used to ingest the updated data after Cloud ML Engine has finished a training or prediction job.
+service CustomerChurnAdmin {
+    // IngestTraining commands the microservice to ingest the training data for the ML Engine job and model
+    rpc IngestTraining(IngestTrainingRequest) returns (google.protobuf.Empty) {
+    }
+
+    // IngestTraining commands the microservice to ingest the prediction results for the ML Engine job and model
+    rpc IngestPredictions(IngestPredictionsRequest) returns (google.protobuf.Empty) {
+    }
+}

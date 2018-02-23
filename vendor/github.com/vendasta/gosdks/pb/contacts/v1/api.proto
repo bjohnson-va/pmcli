@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package contacts.v1;
+
+import "contacts/v1/contacts.proto";
+import "google/protobuf/empty.proto";
+
+service Contacts {
+    //Creates a contact
+    rpc Create(CreateContactRequest) returns (CreateContactResponse){};
+    //Marks a contact as deleted
+    rpc Delete(DeleteContactRequest) returns (google.protobuf.Empty){};
+    //Returns a list of contacts for an account group
+    rpc List(ListContactsRequest) returns (ListContactsResponse){};
+    //Returns the app id and the whitelabeled name for all contacts origins for an account group
+    rpc ListOrigins(ListOriginsRequest) returns (ListOriginsResponse){};
+    //Creates a mapping in contacts between the vendasta Contact ID and the vendor's ID
+    rpc AssociateID(AssociateIDRequest) returns (google.protobuf.Empty){};
+}

@@ -1,0 +1,49 @@
+//version:  1.0.0
+syntax = "proto3";
+
+package datariver;
+
+import "google/protobuf/empty.proto";
+
+message Geo {
+	double latitude = 1;
+	double longitude = 2;
+}
+
+// based on RawListing VObject
+message Listing {
+	string listing_id = 1;
+	string external_id = 2;
+	string url = 3;
+
+	//Basic NAP data
+	string company_name = 4;
+	string address = 5;
+	string city = 6;
+	string state = 7;
+	string country = 8;
+	string zip_code = 9;
+	Geo location = 10;
+	string phone = 11;
+	repeated string additional_phone_numbers = 12;
+	string website = 13;
+
+	//Extended NAP data
+	int32 number_of_reviews = 14;
+	float average_review_rating = 15;
+	repeated string business_categories = 16;
+}
+
+message GetListingRequest {
+	string listing_id = 1;
+}
+
+message DeleteListingRequest {
+	string listing_id = 1;
+}
+
+service ListingService {
+	rpc Put(Listing) returns (Listing);
+	rpc Get(GetListingRequest) returns (Listing);
+	rpc Delete(DeleteListingRequest) returns (google.protobuf.Empty);
+}
