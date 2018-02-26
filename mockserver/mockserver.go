@@ -8,6 +8,7 @@ import (
 	"github.com/bjohnson-va/pmcli/handlers"
 	"github.com/fsnotify/fsnotify"
 	"github.com/vendasta/gosdks/logging"
+	"os"
 )
 
 // TODO: Helper for generating initial config file
@@ -44,9 +45,15 @@ func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d s
 	}
 	go func() {
 		logging.Infof(ctx, "Running HTTP server on port %d...", d.port)
-		srv.ListenAndServe()
+		err := srv.ListenAndServe()
+		if err != nil {
+			fmt.Printf("Error on ListenAndServe: %s", err.Error())
+		}
 	}()
-	startNewServerOnConfigFileChanges(ctx, srv, d)
+	err = startNewServerOnConfigFileChanges(ctx, srv, d)
+	if err != nil {
+		return fmt.Errorf("unable to start server: %s", err.Error())
+	}
 	return nil
 }
 
@@ -101,8 +108,13 @@ func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d 
 
 	err = watcher.Add(d.configFilePath)
 	if err != nil {
-		return fmt.Errorf("error binding watcher to file (%s): %s",
-			d.configFilePath, err.Error())
+		if _, err := os.Stat(d.configFilePath); os.IsNotExist(err) {
+			lm := "Cannot watch file because it doesn't exist: %s"
+			logging.Warningf(ctx, lm, d.configFilePath)
+		} else {
+			return fmt.Errorf("error binding watcher to file (%s): %s",
+				d.configFilePath, err.Error())
+		}
 	}
 	<-done
 	return nil
