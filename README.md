@@ -46,10 +46,10 @@ directory from which it was run.
 
 Overrides:
 > In the example above, when the endpoint `Campaigns.List` is hit, the mock
-server will generate a response for that endpoint but will replace value with
-the one provided.
+server will generate a response for that endpoint but will replace values with
+the ones provided.
 
-> So, if the generate response would normally look like:
+> So, if the generated response normally looked like:
 ```json
 {
   "campaigns": [
@@ -78,7 +78,7 @@ the one provided.
 ```
 
 Note that, since `campaigns` is a list field, *every* businessId field will be
-overridden.  This is a limitation of pmcli and will likely be address lated.
+overridden.  This is a limitation of pmcli and will likely be address later.
 
 Also note that override was provided in `snake_case` but the response was
 generated in `camelCase`.
