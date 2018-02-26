@@ -25,7 +25,10 @@ func BuildAndRun(mockServerPort int,
 		configFilePath: configFile,
 		protofileNames: []string{"advertising/v1/api.proto"}, // TODO: Read from config file
 	}
-	runServerInBackgroundAndRestartOnConfigFileChanges(ctx, d)
+	err := runServerInBackgroundAndRestartOnConfigFileChanges(ctx, d)
+	if err != nil {
+		return fmt.Errorf("couldn't start server: %s", err.Error())
+	}
 	return nil
 }
 
@@ -52,7 +55,7 @@ func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d s
 }
 
 func prepareServerFromConfig(ctx context.Context, d serverDetails) (*http.Server, error) {
-	cfg, err := readConfigFile(d.configFilePath)
+	cfg, err := readConfigFile(ctx, d.configFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading config: %s %s", d.configFilePath, err.Error())
 	}
@@ -69,8 +72,9 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (*http.Server
 
 }
 
-func readConfigFile(filename string) (interface{}, error) {
+func readConfigFile(ctx context.Context, filename string) (map[string]interface{}, error) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		logging.Warningf(ctx, "Config file did not exist: %s", filename)
 		return make(map[string]interface{}), nil
 	}
 
@@ -85,7 +89,11 @@ func readConfigFile(filename string) (interface{}, error) {
 		return nil, fmt.Errorf("unable to unmarshal config: %s", err.Error())
 	}
 
-	return data, nil
+	i, ok := data.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("couldn't turn config into map: %s")
+	}
+	return i, nil
 }
 
 func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d serverDetails) error {
@@ -126,7 +134,7 @@ func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d 
 	return nil
 }
 
-func buildServerMux(ctx context.Context, d serverDetails, config interface{}) (
+func buildServerMux(ctx context.Context, d serverDetails, config map[string]interface{}) (
 	*http.ServeMux, error) {
 
 	mux := http.NewServeMux()

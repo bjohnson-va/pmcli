@@ -36,7 +36,7 @@ func init() {
 		"Directory containing source proto files")
 
 	mockServerCmd.Flags().StringVarP(&mockServerConfigFile, "config", "c",
-		"",
+		"mockserver.json",
 		"Config file")
 
 	RootCmd.AddCommand(mockServerCmd)

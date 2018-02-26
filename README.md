@@ -22,16 +22,18 @@ directory from which it was run.
 ```json
 {
   "overrides": {
-    "Campaigns_List": {
+    "Campaigns.List": {
       "campaigns.business_id": "MY-OVERRIDE"
     },
-    "Adwords_GetStatsForBusiness": {
+    "Adwords.GetStatsForBusiness": {
       "conversions": 1,
       "cost_microdollars": 1000000.00
     }
   },
   "instructions": {
-    "Campaigns_List": {
+    "statusCode": 200,
+    "emptyBody": false,
+    "Campaigns.List": {
       "campaigns": {
         "num": 1
       }

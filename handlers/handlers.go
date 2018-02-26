@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"strings"
 	"github.com/emicklei/proto"
-	"github.com/oliveagle/jsonpath"
 	"github.com/bjohnson-va/pmcli/protofiles"
 	"github.com/bjohnson-va/pmcli/parse"
+	"github.com/bjohnson-va/pmcli/config"
 	"github.com/vendasta/gosdks/util"
+	"context"
+	"github.com/vendasta/gosdks/logging"
 )
 
 type HTTPHandler struct {
@@ -19,8 +21,7 @@ type HTTPHandler struct {
 	HandlerFunc func(http.ResponseWriter, *http.Request)
 }
 
-
-func FromProtofile(allowedOrigin string, rootPath string, protofilename string, config interface{}) ([]HTTPHandler, error) {
+func FromProtofile(allowedOrigin string, rootPath string, protofilename string, cfg map[string]interface{}) ([]HTTPHandler, error) {
 
 	definition, err := protofiles.Read(fmt.Sprintf("%s/%s", rootPath, protofilename))
 	if err != nil {
@@ -41,7 +42,7 @@ func FromProtofile(allowedOrigin string, rootPath string, protofilename string, 
 		rpcs := parse.RPCs(s.Elements)
 		for _, r := range rpcs {
 			p := "/" + pakkage.Name + "." + s.Name + "/" + r.Name
-			c, err := readConfigForRPC(s, r, config)
+			c, err := config.GetInputsForRPC(s, r, cfg)
 			if err != nil {
 				return nil, fmt.Errorf("problem reading config: %s", err.Error())
 			}
@@ -52,49 +53,21 @@ func FromProtofile(allowedOrigin string, rootPath string, protofilename string, 
 	return handlers, nil
 }
 
-func readConfigForRPC(s proto.Service, r proto.RPC, config interface{}) (*configs, error) {
-	i, err := readForRPC("instructions", s, r, config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read instructions: %s", err.Error())
-	}
-	o, err := readForRPC("overrides", s, r, config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read overrides: %s", err.Error())
-	}
-	return &configs{
-		instructions: i,
-		overrides: o,
-	}, nil
-}
-
-func readForRPC(category string, s proto.Service, r proto.RPC, config interface{}) (map[string]interface{}, error) {
-	jp := "$." + category + "." + s.Name + "_" + r.Name + ""
-	i, err := jsonpath.JsonPathLookup(config, jp)
-	if err != nil {
-		// Have to assume the value just wasn't there.  Can't distinguish other errors.
-		var empty map[string]interface{}
-		return empty, nil
-	}
-	a, ok := i.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("bad config value for key %s: %#v", jp, i)
-	}
-	return a, nil
-}
-
-type configs struct {
-	overrides map[string]interface{}
-	instructions map[string]interface{}
-}
 
 
-func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.FieldTypes, c *configs) HTTPHandler {
-	if rpc.ReturnsType == "google.protobuf.Empty" {
+
+func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.FieldTypes, c *config.Inputs) HTTPHandler {
+	ctx := context.Background() // New Handler -> new Context
+	// json unmarshal defaults to float64
+	statusCode := int(c.GetRPCInstruction("statusCode", 200.0).(float64))
+	emptyBody := c.GetRPCInstruction("emptyBody", false).(bool)
+
+	if emptyBody || rpc.ReturnsType == "google.protobuf.Empty" {
 		return HTTPHandler{
 			Path: path,
 			HandlerFunc: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
-				w.WriteHeader(200)
+				w.WriteHeader(statusCode)
 			},
 		}
 	}
@@ -120,9 +93,9 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
+		w.WriteHeader(statusCode)
 
-		obj := GenerateRandomFieldsForMessage(*foundMessage, t, c)
+		obj := GenerateRandomFieldsForMessage(ctx, *foundMessage, t, c)
 		marshaled, _ := json.Marshal(obj)
 		w.Write(([]byte)(marshaled))
 	}
@@ -137,46 +110,39 @@ func randomEnum(enum proto.Enum) proto.EnumField {
 	return possibleEnumValues[0] // TODO: Randomize
 }
 
-func GenerateRandomFieldsForMessage(message proto.Message, t *parse.FieldTypes, c *configs) interface{} {
-	return randomFieldsForMessage("", message, t, c)
+func GenerateRandomFieldsForMessage(ctx context.Context, message proto.Message, t *parse.FieldTypes, c *config.Inputs) interface{} {
+	return randomFieldsForMessage(ctx, "", message, t, c)
 }
 
-func randomFieldsForMessage(breadcrumb string, message proto.Message, t *parse.FieldTypes, c *configs) interface{} {
+func randomFieldsForMessage(ctx context.Context, breadcrumb string, message proto.Message, t *parse.FieldTypes, c *config.Inputs) interface{} {
 	obj := make(map[string]interface{})
 	fieldz := parse.Fields(message.Elements)
 	for _, f := range fieldz {
 
-		fbreadcrumb := f.Name
+		fBreadcrumb := f.Name
 		if breadcrumb != "" {
-			fbreadcrumb = breadcrumb + "." + f.Name
+			fBreadcrumb = breadcrumb + "." + f.Name
 		}
-		value, err := randomFieldValue(fbreadcrumb, *f.Field, t, c)
-		if err != nil {
-			value = err.Error() // Expose the error to the user of the API
-		}
+		var value interface{}
 		if f.Repeated {
-			i, ok := c.instructions[fbreadcrumb].(map[string]interface{})
-			if !ok {
-				// Override wasn't specified for this breadcrumb
-			}
-			length := 1
-			if i != nil {
-				num, ok := i["num"]
-				if ok {
-					length = int(num.(float64))
-				} // else not specified in config file
-			}
-
-			var vlist []interface{}
+			// json unmarshal defaults to float64
+			length := int(c.GetFieldInstruction(fBreadcrumb, "num", 1.0).(float64))
+			var list []interface{}
 			for x := 0; x < length; x++ {
-				z, err := randomFieldValue(fbreadcrumb, *f.Field, t, c)
+				z, err := randomFieldValue(ctx, fBreadcrumb, *f.Field, t, c)
 				if err != nil {
 					value = err.Error()
-					continue;
+					break
 				}
-				vlist = append(vlist, z)
+				list = append(list, z)
 			}
-			value = vlist
+			value = list
+		} else {
+			var err error
+			value, err = randomFieldValue(ctx, fBreadcrumb, *f.Field, t, c)
+			if err != nil {
+				value = err.Error() // Expose the error to the user of the API
+			}
 		}
 		obj[util.ToCamelCase(f.Name)] = value
 	}
@@ -184,16 +150,14 @@ func randomFieldsForMessage(breadcrumb string, message proto.Message, t *parse.F
 }
 
 
-func randomFieldValue(breadcrumb string, field proto.Field, t *parse.FieldTypes, c *configs) (interface{}, error) {
-	// TODO: randomFieldValue should product consistent pseudorandom values that dont repeat
-	override, ok := c.overrides[breadcrumb] // TODO: Decide to use snake (from proto) or camel (from endpoints)
-	fmt.Printf("breadcrumb is: %s %s\n", breadcrumb, util.ToCamelCase(breadcrumb))
-	fmt.Printf("overrides are %#v\n", c.overrides)
+func randomFieldValue(ctx context.Context, breadcrumb string, field proto.Field, t *parse.FieldTypes, c *config.Inputs) (interface{}, error) {
+	// TODO: randomFieldValue should produce consistent pseudorandom values that dont repeat
+	override, ok := c.Overrides[breadcrumb] // TODO: Decide to use snake (from proto) or camel (from endpoints)
 	if !ok {
 		// Override wasn't specified for this breadcrumb
 	}
 	if override != nil {
-		fmt.Printf("using override %f\n", override)
+		logging.Infof(ctx, "Using override for %s: %s", breadcrumb, override)
 		return override, nil
 	}
 	if field.Type == "string" || field.Type == "bytes" {
@@ -237,7 +201,7 @@ func randomFieldValue(breadcrumb string, field proto.Field, t *parse.FieldTypes,
 					return randomEnum(e).Name, nil
 				}
 			}
-			return randomFieldsForMessage(breadcrumb, m, t, c), nil
+			return randomFieldsForMessage(ctx, breadcrumb, m, t, c), nil
 		}
 	}
 	return "", fmt.Errorf("unexpected field type %s", field.Type)
