@@ -15,10 +15,10 @@ pmcli serve
 ```
 
 ## Configuration
-By default, *pmcli* will attempt to read file `mockserver.json` in the same
+By default, *pmcli* will attempt to read the file `mockserver.json` in the same
 directory from which it was run.
 
-### Example config.json
+### Example `mockserver.json`
 ```json
 {
   "overrides": {
