@@ -21,6 +21,9 @@ directory from which it was run.
 ### Example `mockserver.json`
 ```json
 {
+  "protofiles": [
+    "advertising/v1/api.proto"
+  ]
   "overrides": {
     "Campaigns.List": {
       "campaigns.business_id": "MY-OVERRIDE"
