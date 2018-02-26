@@ -3,14 +3,16 @@ package config
 import (
 	"fmt"
 	"github.com/emicklei/proto"
+	"os"
+	"io/ioutil"
+	"encoding/json"
 )
 
-
-
 type Inputs struct {
-	RPCName string
-	Overrides map[string]interface{}
-	Instructions map[string]interface{}
+	RPCName        string
+	ProtofileNames []string
+	Overrides      map[string]interface{}
+	Instructions   map[string]interface{}
 }
 
 func (c *Inputs) GetRPCInstruction(instruction string, defaultValue interface{}) interface{} {
@@ -45,9 +47,9 @@ func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}
 		return nil, fmt.Errorf("failed to read overrides: %s", err.Error())
 	}
 	return &Inputs{
-		RPCName: r.Name,
+		RPCName:      r.Name,
 		Instructions: i,
-		Overrides: o,
+		Overrides:    o,
 	}, nil
 }
 
@@ -70,4 +72,64 @@ func readForRPC(category string, s proto.Service, r proto.RPC, config map[string
 		return nil, fmt.Errorf("bad config value for key %s: %#v", key, i)
 	}
 	return a, nil
+}
+
+type File struct {
+	ConfigMap map[string]interface{}
+	ProtofileNames []string
+}
+
+// TODO: Don't use this legacy fallback in v2.0.0+
+var legacyFallback = File{
+ConfigMap: make(map[string]interface{}),
+ProtofileNames: []string{"advertising/v1/api.proto"},
+}
+
+func ReadFile(filename string) (*File, error) {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		//return nil, fmt.Errorf("Could not find config file at %s", filename)
+		fs := "WARNING: Using fallback of %s for protofiles. Please create a %s file.\n"
+		fmt.Printf(fs, legacyFallback.ProtofileNames, filename)
+		return &legacyFallback, nil
+	}
+	r, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read config file: %s", err.Error())
+	}
+	f, err := parseConfig(r)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse config file: %s", err.Error())
+	}
+	return f, nil
+}
+
+func parseConfig(fileContents []byte) (*File, error) {
+	var data interface{}
+	err := json.Unmarshal(fileContents, &data)
+	if err != nil {
+		return nil, fmt.Errorf("unable to unmarshal config: %s", err.Error())
+	}
+
+	i, ok := data.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("couldn't turn config into map: %s")
+	}
+
+	k := "protofiles"
+	p, ok := i[k].([]interface{})
+	if !ok {
+		//return nil, fmt.Errorf("nothing to mock. `protofiles` missing in %s", filename)
+		fs := "WARNING: Using fallback of %s for protofiles. Please specify %s.\n"
+		fmt.Printf(fs, legacyFallback.ProtofileNames, k)
+		return &legacyFallback, nil
+	}
+	protofiles := make([]string, len(p))
+	for idx, pf := range p {
+		protofiles[idx] = fmt.Sprintf("%s", pf)
+	}
+
+	return &File{
+		ConfigMap: i,
+		ProtofileNames: protofiles,
+	}, nil
 }

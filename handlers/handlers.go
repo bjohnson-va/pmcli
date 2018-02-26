@@ -21,32 +21,46 @@ type HTTPHandler struct {
 	HandlerFunc func(http.ResponseWriter, *http.Request)
 }
 
-func FromProtofile(allowedOrigin string, rootPath string, protofilename string, cfg map[string]interface{}) ([]HTTPHandler, error) {
+type HandlerBuildingConfig struct {
+	AllowedOrigin string
+	ProtofileRootPath string
+	AllConfig map[string]interface{}
+}
 
-	definition, err := protofiles.Read(fmt.Sprintf("%s/%s", rootPath, protofilename))
+func FromProtofile(c HandlerBuildingConfig, protofileName string) ([]HTTPHandler, error) {
+
+	a := fmt.Sprintf("%s/%s", c.ProtofileRootPath, protofileName)
+	definition, err := protofiles.Read(a)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read protofile: %s", err.Error())
 	}
 
-	var handlers []HTTPHandler
+	p := *parse.Package(definition.Elements)
 
-	pakkage := *parse.Package(definition.Elements)
-	t, err := parse.AllFieldTypesFromProtos(rootPath, definition)
+	t, err := parse.AllFieldTypesFromProtos(c.ProtofileRootPath, definition)
 	if err != nil {
 		return nil, fmt.Errorf("unable to extract types: %s", err.Error())
 	}
 
-	srv := parse.Services(definition.Elements)
+	s := parse.Services(definition.Elements)
+	h, err := buildHandlersForServices(c, s, p.Name, t)
+	if err != nil {
+		return nil, fmt.Errorf("unable to build handlers: %s", err.Error())
+	}
+	return h, nil
+}
 
-	for _, s := range srv {
+func buildHandlersForServices(hbc HandlerBuildingConfig, services []proto.Service, packageName string, t *parse.FieldTypes) ([]HTTPHandler, error) {
+	var handlers []HTTPHandler
+	for _, s := range services {
 		rpcs := parse.RPCs(s.Elements)
 		for _, r := range rpcs {
-			p := "/" + pakkage.Name + "." + s.Name + "/" + r.Name
-			c, err := config.GetInputsForRPC(s, r, cfg)
+			p := "/" + packageName + "." + s.Name + "/" + r.Name
+			c, err := config.GetInputsForRPC(s, r, hbc.AllConfig)
 			if err != nil {
 				return nil, fmt.Errorf("problem reading config: %s", err.Error())
 			}
-			newHandler := fakeHandler(allowedOrigin, p, r, t, c)
+			newHandler := fakeHandler(hbc.AllowedOrigin, p, r, t, c)
 			handlers = append(handlers, newHandler)
 		}
 	}

@@ -2,11 +2,9 @@ package mockserver
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"os"
+	"github.com/bjohnson-va/pmcli/config"
 	"github.com/bjohnson-va/pmcli/handlers"
 	"github.com/fsnotify/fsnotify"
 	"github.com/vendasta/gosdks/logging"
@@ -23,7 +21,6 @@ func BuildAndRun(mockServerPort int,
 		allowedOrigin:  allowedOrigin,
 		rootDir:        rootDir,
 		configFilePath: configFile,
-		protofileNames: []string{"advertising/v1/api.proto"}, // TODO: Read from config file
 	}
 	err := runServerInBackgroundAndRestartOnConfigFileChanges(ctx, d)
 	if err != nil {
@@ -37,7 +34,6 @@ type serverDetails struct {
 	allowedOrigin  string
 	rootDir        string
 	configFilePath string
-	protofileNames []string
 }
 
 func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d serverDetails) error {
@@ -55,9 +51,9 @@ func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d s
 }
 
 func prepareServerFromConfig(ctx context.Context, d serverDetails) (*http.Server, error) {
-	cfg, err := readConfigFile(ctx, d.configFilePath)
+	cfg, err := config.ReadFile(d.configFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading config: %s %s", d.configFilePath, err.Error())
+		return nil, fmt.Errorf("error reading config [%s]: %s", d.configFilePath, err.Error())
 	}
 
 	mux, err := buildServerMux(ctx, d, cfg)
@@ -72,29 +68,7 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (*http.Server
 
 }
 
-func readConfigFile(ctx context.Context, filename string) (map[string]interface{}, error) {
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		logging.Warningf(ctx, "Config file did not exist: %s", filename)
-		return make(map[string]interface{}), nil
-	}
 
-	plan, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read config file: %s", err.Error())
-	}
-
-	var data interface{}
-	err = json.Unmarshal(plan, &data)
-	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshal config: %s", err.Error())
-	}
-
-	i, ok := data.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("couldn't turn config into map: %s")
-	}
-	return i, nil
-}
 
 func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d serverDetails) error {
 	watcher, err := fsnotify.NewWatcher()
@@ -134,12 +108,17 @@ func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d 
 	return nil
 }
 
-func buildServerMux(ctx context.Context, d serverDetails, config map[string]interface{}) (
+func buildServerMux(ctx context.Context, d serverDetails, c *config.File) (
 	*http.ServeMux, error) {
 
 	mux := http.NewServeMux()
-	for _, p := range d.protofileNames {
-		h, err := handlers.FromProtofile(d.allowedOrigin, d.rootDir, p, config)
+	hbc := handlers.HandlerBuildingConfig{
+		AllowedOrigin: d.allowedOrigin,
+		ProtofileRootPath: d.rootDir,
+		AllConfig: c.ConfigMap,
+	}
+	for _, p := range c.ProtofileNames {
+		h, err := handlers.FromProtofile(hbc, p)
 		if err != nil {
 			return nil, fmt.Errorf("failed to make handlers: %s", err.Error())
 		}
