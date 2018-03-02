@@ -1,3 +1,6 @@
+1.3.0
+- Add support for `delaySeconds` instruction
+
 1.2.1
 - Handle missing config json file
 

@@ -14,6 +14,7 @@ import (
 	"github.com/vendasta/gosdks/util"
 	"context"
 	"github.com/vendasta/gosdks/logging"
+	"time"
 )
 
 type HTTPHandler struct {
@@ -74,12 +75,22 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 	ctx := context.Background() // New Handler -> new Context
 	// json unmarshal defaults to float64
 	statusCode := int(c.GetRPCInstruction("statusCode", 200.0).(float64))
+	delaySeconds := c.GetRPCInstruction("delaySeconds", 0.0).(float64)
 	emptyBody := c.GetRPCInstruction("emptyBody", false).(bool)
 
 	if emptyBody || rpc.ReturnsType == "google.protobuf.Empty" {
 		return HTTPHandler{
 			Path: path,
 			HandlerFunc: func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+				w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
+				if r.Method == "OPTIONS" {
+					w.WriteHeader(200)
+					return
+				}
+				delay(ctx, delaySeconds)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(statusCode)
 			},
@@ -108,7 +119,7 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-
+		delay(ctx, delaySeconds)
 		obj := GenerateRandomFieldsForMessage(ctx, *foundMessage, t, c)
 		marshaled, _ := json.Marshal(obj)
 		w.Write(([]byte)(marshaled))
@@ -117,6 +128,14 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 		Path:        path,
 		HandlerFunc: fn,
 	}
+}
+
+func delay(ctx context.Context, seconds float64) {
+	if seconds <= 0 {
+		return
+	}
+	logging.Infof(ctx, "Delaying %.2f seconds as instructed in config", seconds)
+	time.Sleep(time.Second * time.Duration(seconds))
 }
 
 func randomEnum(enum proto.Enum) proto.EnumField {
@@ -166,6 +185,7 @@ func randomFieldsForMessage(ctx context.Context, breadcrumb string, message prot
 
 func randomFieldValue(ctx context.Context, breadcrumb string, field proto.Field, t *parse.FieldTypes, c *config.Inputs) (interface{}, error) {
 	// TODO: randomFieldValue should produce consistent pseudorandom values that dont repeat
+	logging.Debugf(ctx, "Breadcrumb is: %s", breadcrumb)
 	override, ok := c.Overrides[breadcrumb] // TODO: Decide to use snake (from proto) or camel (from endpoints)
 	if !ok {
 		// Override wasn't specified for this breadcrumb

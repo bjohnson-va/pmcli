@@ -88,7 +88,8 @@ ProtofileNames: []string{"advertising/v1/api.proto"},
 func ReadFile(filename string) (*File, error) {
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		//return nil, fmt.Errorf("Could not find config file at %s", filename)
-		fs := "WARNING: Using fallback of %s for protofiles. Please create a %s file.\n"
+		fs := "WARNING: OVERRIDES AND INSTRUCTIONS WILL NOT WORK" +
+			"Using fallback of %s for protofiles. Please create a %s file.\n"
 		fmt.Printf(fs, legacyFallback.ProtofileNames, filename)
 		return &legacyFallback, nil
 	}
@@ -119,7 +120,8 @@ func parseConfig(fileContents []byte) (*File, error) {
 	p, ok := i[k].([]interface{})
 	if !ok {
 		//return nil, fmt.Errorf("nothing to mock. `protofiles` missing in %s", filename)
-		fs := "WARNING: Using fallback of %s for protofiles. Please specify %s.\n"
+		fs := "WARNING: OVERRIDES AND INSTRUCTIONS WILL NOT WORK" +
+			"Using fallback of %s for protofiles. Please specify %s.\n"
 		fmt.Printf(fs, legacyFallback.ProtofileNames, k)
 		return &legacyFallback, nil
 	}
