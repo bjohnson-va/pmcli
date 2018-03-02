@@ -3,8 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"math"
-	"math/rand"
 	"net/http"
 	"strings"
 	"github.com/emicklei/proto"
@@ -15,6 +13,7 @@ import (
 	"context"
 	"github.com/vendasta/gosdks/logging"
 	"time"
+	"github.com/bjohnson-va/pmcli/random"
 )
 
 type HTTPHandler struct {
@@ -26,6 +25,7 @@ type HandlerBuildingConfig struct {
 	AllowedOrigin string
 	ProtofileRootPath string
 	AllConfig map[string]interface{}
+	RandomProvider *random.FieldProvider
 }
 
 func FromProtofile(c HandlerBuildingConfig, protofileName string) ([]HTTPHandler, error) {
@@ -56,12 +56,12 @@ func buildHandlersForServices(hbc HandlerBuildingConfig, services []proto.Servic
 	for _, s := range services {
 		rpcs := parse.RPCs(s.Elements)
 		for _, r := range rpcs {
-			p := "/" + packageName + "." + s.Name + "/" + r.Name
+			p := "/" + packageName + "." + s.Name + "/" + r.Name // TODO: . should be /
 			c, err := config.GetInputsForRPC(s, r, hbc.AllConfig)
 			if err != nil {
 				return nil, fmt.Errorf("problem reading config: %s", err.Error())
 			}
-			newHandler := fakeHandler(hbc.AllowedOrigin, p, r, t, c)
+			newHandler := fakeHandler(hbc.AllowedOrigin, p, r, t, hbc.RandomProvider, c)
 			handlers = append(handlers, newHandler)
 		}
 	}
@@ -71,7 +71,7 @@ func buildHandlersForServices(hbc HandlerBuildingConfig, services []proto.Servic
 
 
 
-func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.FieldTypes, c *config.Inputs) HTTPHandler {
+func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.FieldTypes, p *random.FieldProvider, c *config.Inputs) HTTPHandler {
 	ctx := context.Background() // New Handler -> new Context
 	// json unmarshal defaults to float64
 	statusCode := int(c.GetRPCInstruction("statusCode", 200.0).(float64))
@@ -119,8 +119,9 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
+
 		delay(ctx, delaySeconds)
-		obj := GenerateRandomFieldsForMessage(ctx, *foundMessage, t, c)
+		obj := GenerateRandomFieldsForMessage(ctx, p, *foundMessage, t, c)
 		marshaled, _ := json.Marshal(obj)
 		w.Write(([]byte)(marshaled))
 	}
@@ -143,11 +144,13 @@ func randomEnum(enum proto.Enum) proto.EnumField {
 	return possibleEnumValues[0] // TODO: Randomize
 }
 
-func GenerateRandomFieldsForMessage(ctx context.Context, message proto.Message, t *parse.FieldTypes, c *config.Inputs) interface{} {
-	return randomFieldsForMessage(ctx, "", message, t, c)
+func GenerateRandomFieldsForMessage(ctx context.Context, p *random.FieldProvider,
+	message proto.Message, t *parse.FieldTypes, c *config.Inputs) interface{} {
+	return randomFieldsForMessage(ctx, p, "", message, t, c)
 }
 
-func randomFieldsForMessage(ctx context.Context, breadcrumb string, message proto.Message, t *parse.FieldTypes, c *config.Inputs) interface{} {
+func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadcrumb string, message proto.Message,
+	t *parse.FieldTypes, c *config.Inputs) interface{} {
 	obj := make(map[string]interface{})
 	fieldz := parse.Fields(message.Elements)
 	for _, f := range fieldz {
@@ -162,7 +165,7 @@ func randomFieldsForMessage(ctx context.Context, breadcrumb string, message prot
 			length := int(c.GetFieldInstruction(fBreadcrumb, "num", 1.0).(float64))
 			var list []interface{}
 			for x := 0; x < length; x++ {
-				z, err := randomFieldValue(ctx, fBreadcrumb, *f.Field, t, c)
+				z, err := randomFieldValue(ctx, *p, fBreadcrumb, *f.Field, t, c)
 				if err != nil {
 					value = err.Error()
 					break
@@ -172,7 +175,7 @@ func randomFieldsForMessage(ctx context.Context, breadcrumb string, message prot
 			value = list
 		} else {
 			var err error
-			value, err = randomFieldValue(ctx, fBreadcrumb, *f.Field, t, c)
+			value, err = randomFieldValue(ctx, *p, fBreadcrumb, *f.Field, t, c)
 			if err != nil {
 				value = err.Error() // Expose the error to the user of the API
 			}
@@ -183,9 +186,8 @@ func randomFieldsForMessage(ctx context.Context, breadcrumb string, message prot
 }
 
 
-func randomFieldValue(ctx context.Context, breadcrumb string, field proto.Field, t *parse.FieldTypes, c *config.Inputs) (interface{}, error) {
+func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb string, field proto.Field, t *parse.FieldTypes, c *config.Inputs) (interface{}, error) {
 	// TODO: randomFieldValue should produce consistent pseudorandom values that dont repeat
-	logging.Debugf(ctx, "Breadcrumb is: %s", breadcrumb)
 	override, ok := c.Overrides[breadcrumb] // TODO: Decide to use snake (from proto) or camel (from endpoints)
 	if !ok {
 		// Override wasn't specified for this breadcrumb
@@ -195,22 +197,22 @@ func randomFieldValue(ctx context.Context, breadcrumb string, field proto.Field,
 		return override, nil
 	}
 	if field.Type == "string" || field.Type == "bytes" {
-		return fmt.Sprintf("some %s %d", field.Type, rand.Intn(1000)), nil
+		return p.NewString(breadcrumb), nil
 	}
 	if strings.Contains(field.Type, "int") {
-		return 1234567890, nil
+		return p.NewInt32(breadcrumb), nil
 	}
 	if strings.Contains(field.Type, "float") {
-		return math.Phi, nil
+		return p.NewFloat32(breadcrumb), nil
 	}
 	if strings.Contains(field.Type, "double") {
-		return math.Phi, nil
+		return p.NewFloat64(breadcrumb), nil
 	}
 	if strings.Contains(field.Type, "bool") {
-		return true, nil
+		return p.NewBool(breadcrumb), nil
 	}
 	if strings.Contains(field.Type, "google.protobuf.Timestamp") {
-		return "2016-01-01", nil // TODO: Use correct format
+		return p.NewTimestamp(breadcrumb), nil // TODO: Use correct format
 	}
 
 	var isEnum bool
@@ -235,7 +237,7 @@ func randomFieldValue(ctx context.Context, breadcrumb string, field proto.Field,
 					return randomEnum(e).Name, nil
 				}
 			}
-			return randomFieldsForMessage(ctx, breadcrumb, m, t, c), nil
+			return randomFieldsForMessage(ctx, &p, breadcrumb, m, t, c), nil
 		}
 	}
 	return "", fmt.Errorf("unexpected field type %s", field.Type)

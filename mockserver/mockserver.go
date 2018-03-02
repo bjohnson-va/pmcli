@@ -9,12 +9,13 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/vendasta/gosdks/logging"
 	"os"
+	"github.com/bjohnson-va/pmcli/random"
 )
 
 // TODO: Helper for generating initial config file
 
-func BuildAndRun(mockServerPort int,
-	allowedOrigin string, rootDir string, configFile string) error {
+func BuildAndRun(mockServerPort int, allowedOrigin string,
+	rootDir string, configFile string, randomSeed string) error {
 	ctx := context.Background()
 
 	d := serverDetails{
@@ -22,6 +23,7 @@ func BuildAndRun(mockServerPort int,
 		allowedOrigin:  allowedOrigin,
 		rootDir:        rootDir,
 		configFilePath: configFile,
+		randomSeed: randomSeed,
 	}
 	err := runServerInBackgroundAndRestartOnConfigFileChanges(ctx, d)
 	if err != nil {
@@ -35,6 +37,7 @@ type serverDetails struct {
 	allowedOrigin  string
 	rootDir        string
 	configFilePath string
+	randomSeed     string
 }
 
 func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d serverDetails) error {
@@ -74,8 +77,6 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (*http.Server
 	return httpSrv, nil
 
 }
-
-
 
 func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d serverDetails) error {
 	watcher, err := fsnotify.NewWatcher()
@@ -123,11 +124,14 @@ func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d 
 func buildServerMux(ctx context.Context, d serverDetails, c *config.File) (
 	*http.ServeMux, error) {
 
+	r := initializeRandomProvider(ctx, d.randomSeed)
+
 	mux := http.NewServeMux()
 	hbc := handlers.HandlerBuildingConfig{
-		AllowedOrigin: d.allowedOrigin,
+		AllowedOrigin:     d.allowedOrigin,
 		ProtofileRootPath: d.rootDir,
-		AllConfig: c.ConfigMap,
+		AllConfig:         c.ConfigMap,
+		RandomProvider: &r,
 	}
 	for _, p := range c.ProtofileNames {
 		h, err := handlers.FromProtofile(hbc, p)
@@ -141,4 +145,18 @@ func buildServerMux(ctx context.Context, d serverDetails, c *config.File) (
 		}
 	}
 	return mux, nil
+}
+
+func initializeRandomProvider(ctx context.Context, randomSeed string) random.FieldProvider {
+	fallback := "breadcrumb"
+	switch randomSeed {
+	case "breadcrumb":
+		return random.BreadcrumbBasedFieldProvider()
+	case "time":
+		return random.TimeBasedFieldProvider()
+	default:
+		w := "Unexpected random seed type \"%s\". Falling back to \"%s\""
+		logging.Warningf(ctx, w, randomSeed, fallback)
+		return random.BreadcrumbBasedFieldProvider()
+	}
 }

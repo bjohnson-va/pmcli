@@ -11,6 +11,7 @@ var (
 	mockServerAllowedOrigin string
 	mockServerSource string
 	mockServerConfigFile string
+	mockServerRandomValueSource string
 
 	mockServerCmd = &cobra.Command{
 		Use:   "serve",
@@ -39,10 +40,14 @@ func init() {
 		"mockserver.json",
 		"Config file")
 
+	mockServerCmd.Flags().StringVarP(&mockServerRandomValueSource, "random", "r",
+		"breadcrumb",
+		"Randomization seed: Choose one of [breadcrumb, time]")
+
 	RootCmd.AddCommand(mockServerCmd)
 }
 
 func runMockServer(cmd *cobra.Command, args []string) error {
 	return mockserver.BuildAndRun(mockServerPort, mockServerAllowedOrigin,
-		mockServerSource, mockServerConfigFile)
+		mockServerSource, mockServerConfigFile, mockServerRandomValueSource)
 }
