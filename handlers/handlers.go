@@ -146,10 +146,10 @@ func randomEnum(enum proto.Enum) proto.EnumField {
 
 func GenerateRandomFieldsForMessage(ctx context.Context, p *random.FieldProvider,
 	message proto.Message, t *parse.FieldTypes, c *config.Inputs) interface{} {
-	return randomFieldsForMessage(ctx, p, "", message, t, c)
+	return randomFieldsForMessage(ctx, p, "", 1, message, t, c)
 }
 
-func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadcrumb string, message proto.Message,
+func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadcrumb string, individualizer int, message proto.Message,
 	t *parse.FieldTypes, c *config.Inputs) interface{} {
 	obj := make(map[string]interface{})
 	fieldz := parse.Fields(message.Elements)
@@ -165,7 +165,7 @@ func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadc
 			length := int(c.GetFieldInstruction(fBreadcrumb, "num", 1.0).(float64))
 			var list []interface{}
 			for x := 0; x < length; x++ {
-				z, err := randomFieldValue(ctx, *p, fBreadcrumb, *f.Field, t, c)
+				z, err := randomFieldValue(ctx, *p, fBreadcrumb, x + 1, *f.Field, t, c)
 				if err != nil {
 					value = err.Error()
 					break
@@ -175,7 +175,8 @@ func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadc
 			value = list
 		} else {
 			var err error
-			value, err = randomFieldValue(ctx, *p, fBreadcrumb, *f.Field, t, c)
+			ni := individualizer * 10
+			value, err = randomFieldValue(ctx, *p, fBreadcrumb, ni, *f.Field, t, c)
 			if err != nil {
 				value = err.Error() // Expose the error to the user of the API
 			}
@@ -186,7 +187,7 @@ func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadc
 }
 
 
-func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb string, field proto.Field, t *parse.FieldTypes, c *config.Inputs) (interface{}, error) {
+func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb string, individualizer int, field proto.Field, t *parse.FieldTypes, c *config.Inputs) (interface{}, error) {
 	// TODO: randomFieldValue should produce consistent pseudorandom values that dont repeat
 	override, ok := c.Overrides[breadcrumb] // TODO: Decide to use snake (from proto) or camel (from endpoints)
 	if !ok {
@@ -196,23 +197,24 @@ func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb st
 		logging.Infof(ctx, "Using override for %s: %s", breadcrumb, override)
 		return override, nil
 	}
+	supercrumb := fmt.Sprintf("breadcrumb%d", individualizer)
 	if field.Type == "string" || field.Type == "bytes" {
-		return p.NewString(breadcrumb), nil
+		return p.NewString(supercrumb), nil
 	}
 	if strings.Contains(field.Type, "int") {
-		return p.NewInt32(breadcrumb), nil
+		return p.NewInt32(supercrumb), nil
 	}
 	if strings.Contains(field.Type, "float") {
-		return p.NewFloat32(breadcrumb), nil
+		return p.NewFloat32(supercrumb), nil
 	}
 	if strings.Contains(field.Type, "double") {
-		return p.NewFloat64(breadcrumb), nil
+		return p.NewFloat64(supercrumb), nil
 	}
 	if strings.Contains(field.Type, "bool") {
-		return p.NewBool(breadcrumb), nil
+		return p.NewBool(supercrumb), nil
 	}
 	if strings.Contains(field.Type, "google.protobuf.Timestamp") {
-		return p.NewTimestamp(breadcrumb), nil // TODO: Use correct format
+		return p.NewTimestamp(supercrumb), nil // TODO: Use correct format
 	}
 
 	var isEnum bool
@@ -237,7 +239,8 @@ func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb st
 					return randomEnum(e).Name, nil
 				}
 			}
-			return randomFieldsForMessage(ctx, &p, breadcrumb, m, t, c), nil
+			ni := individualizer * 10
+			return randomFieldsForMessage(ctx, &p, breadcrumb, ni, m, t, c), nil
 		}
 	}
 	return "", fmt.Errorf("unexpected field type %s", field.Type)
