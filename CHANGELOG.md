@@ -1,3 +1,6 @@
+1.4.0
+- Add support for different kinds of random values
+
 1.3.0
 - Add support for `delaySeconds` instruction
 

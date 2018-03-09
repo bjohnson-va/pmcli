@@ -14,6 +14,59 @@ pmcli serve
     E.g. pmcli serve -p 28003
 ```
 
+## Randomization Strategies (R.S.)
+
+You can adjust the way *pmcli* generates random values with the `-r` flag.
+
+`pmcli serve -r time`
+
+The currently supported strategies are `breadcrumb` + `time`;
+
+### Breadcrumb
+
+By default, *pmcli* will use a "breadcrumb based" randomization strategy.
+
+The purpose of the Breadcrumb R.S is to provide psuedorandom (repeatable)
+values from your APIs.
+
+*pmcli* generates a breadcrumb for each field it generates.  For example, in the
+following response:
+```
+{
+  "campaigns":[
+    {
+      "business": {
+        "name": "My business"
+      }
+      "campaignId":"some campaign ID",
+      "endDate":"2016-01-01",
+      "orderDate":"2016-01-01",
+      "startDate":"2016-01-01",
+      "status":"ORDER_RECEIVED"
+    }
+  ]
+}
+```
+
+... `campaigns.business.name` would be an example of a breadcrumb.
+
+In the case of lists, this randomization strategy will also take the list index
+into account, ensuring that each item in the generated list (
+see <a href="#instructions">#Instructions</a>) has a unique value in the scope
+of that list.
+
+### Time
+
+The time-based random value generator uses the current system time to seed its
+random values.
+
+The purpose of the Time R.S. is to generate entirely unique values on each
+subsequent call to your API.
+
+Note: In order to ensure that two (for example) integer fields in the same
+message have different values, the `time` R.S. also factors in the breadcrumbs.
+
+
 ## Configuration
 By default, *pmcli* will attempt to read the file `mockserver.json` in the same
 directory from which it was run.
@@ -48,7 +101,7 @@ directory from which it was run.
 
 ---
 
-Overrides:
+### Overrides:
 > In the example above, when the endpoint `Campaigns.List` is hit, the mock
 server will generate a response for that endpoint but will replace values with
 the ones provided.
@@ -89,7 +142,7 @@ generated in `camelCase`.
 
 ---
 
-Instructions:
+### Instructions:
 
 `statusCode`: The HTTP status code to return from the associated endpoint.
 
