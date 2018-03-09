@@ -1,3 +1,6 @@
+1.5.0
+- Add support for `exclusions`
+
 1.4.0
 - Add support for different kinds of random values
 
