@@ -87,14 +87,19 @@ directory from which it was run.
     }
   },
   "instructions": {
-    "statusCode": 200,
-    "emptyBody": false,
     "delaySeconds": 0.55,
     "Campaigns.List": {
+      "statusCode": 200,
+      "emptyBody": false,
       "campaigns": {
         "num": 1
       }
     }
+  }
+  "exclusions": {
+    "Adwords.GetAccountInfo": [
+      "account_info"
+    ]
   }
 }
 ```
@@ -162,3 +167,9 @@ E.g.
     }
   }
 ```
+
+---
+
+Exclusions:
+
+This is a list of fields that should not be included in the response at all.
