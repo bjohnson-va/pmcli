@@ -13,6 +13,7 @@ type Inputs struct {
 	ProtofileNames []string
 	Overrides      map[string]interface{}
 	Instructions   map[string]interface{}
+	Exclusions 	   map[string]bool
 }
 
 func (c *Inputs) GetRPCInstruction(instruction string, defaultValue interface{}) interface{} {
@@ -37,6 +38,15 @@ func (c *Inputs) GetFieldInstruction(fieldBreadcrumb string, instruction string,
 	return defaultValue
 }
 
+// GetExcludeInstruction returns true if the given breadcrumb has been excluded
+func (c *Inputs) GetExcludeInstruction(fieldBreadcrumb string) bool {
+	i, ok := c.Exclusions[fieldBreadcrumb]
+	if ok {
+		return i
+	}
+	return false
+}
+
 func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}) (*Inputs, error) {
 	i, err := readForRPC("instructions", s, r, config)
 	if err != nil {
@@ -46,10 +56,15 @@ func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}
 	if err != nil {
 		return nil, fmt.Errorf("failed to read overrides: %s", err.Error())
 	}
+	e, err := readListForRPC("exclusions", s, r, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read overrides: %s", err.Error())
+	}
 	return &Inputs{
 		RPCName:      r.Name,
 		Instructions: i,
 		Overrides:    o,
+		Exclusions:   e,
 	}, nil
 }
 
@@ -72,6 +87,32 @@ func readForRPC(category string, s proto.Service, r proto.RPC, config map[string
 		return nil, fmt.Errorf("bad config value for key %s: %#v", key, i)
 	}
 	return a, nil
+}
+
+func readListForRPC(category string, s proto.Service, r proto.RPC, config map[string]interface{}) (map[string]bool, error) {
+	rpcKey := s.Name + "." + r.Name
+	c, ok := config[category]
+	if !ok {
+	return map[string]bool{}, nil
+	}
+	exclusionsByRPC, ok := c.(map[string]interface{})
+	if !ok {
+	return nil, fmt.Errorf("invalid format for exclusion section: %s", category)
+	}
+	i, ok := exclusionsByRPC[rpcKey]
+	if !ok {
+		return map[string]bool{}, nil
+	}
+	fmt.Printf("%s for %s are %#v", category, rpcKey, i)
+	a, ok := i.([]interface{})
+	if !ok {
+	return nil, fmt.Errorf("Couldnt get list for key %s: %#v", rpcKey, i)
+	}
+	var out = map[string]bool{}
+	for _, x := range a {
+		out[x.(string)] = true
+	}
+	return out, nil
 }
 
 type File struct {

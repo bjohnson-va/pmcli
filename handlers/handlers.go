@@ -154,10 +154,13 @@ func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadc
 	obj := make(map[string]interface{})
 	fieldz := parse.Fields(message.Elements)
 	for _, f := range fieldz {
-
 		fBreadcrumb := f.Name
 		if breadcrumb != "" {
 			fBreadcrumb = breadcrumb + "." + f.Name
+		}
+		if c.GetExcludeInstruction(fBreadcrumb) {
+			logging.Debugf(ctx, "%s is excluded via config file", breadcrumb)
+			continue;
 		}
 		var value interface{}
 		if f.Repeated {

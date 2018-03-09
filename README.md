@@ -87,14 +87,19 @@ directory from which it was run.
     }
   },
   "instructions": {
-    "statusCode": 200,
-    "emptyBody": false,
     "delaySeconds": 0.55,
     "Campaigns.List": {
+      "statusCode": 200,
+      "emptyBody": false,
       "campaigns": {
         "num": 1
       }
     }
+  }
+  "exclusions": {
+    "Adwords.GetAccountInfo": [
+      "account_info"
+    ]
   }
 }
 ```
@@ -102,11 +107,11 @@ directory from which it was run.
 ---
 
 ### Overrides:
-> In the example above, when the endpoint `Campaigns.List` is hit, the mock
+In the example above, when the endpoint `Campaigns.List` is hit, the mock
 server will generate a response for that endpoint but will replace values with
 the ones provided.
 
-> So, if the generated response normally looked like:
+So, if the generated response normally looked like:
 ```json
 {
   "campaigns": [
@@ -120,7 +125,8 @@ the ones provided.
 }
 ```
 
-> With the override, the response would be
+With the override `"campaigns.business_id": "MY-OVERRIDE"`, the response
+would be:
 ```json
 {
   "campaigns": [
@@ -162,3 +168,9 @@ E.g.
     }
   }
 ```
+
+---
+
+### Exclusions:
+
+This is a list of fields that should not be included in the response at all.
