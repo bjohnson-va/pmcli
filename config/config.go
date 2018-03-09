@@ -103,7 +103,6 @@ func readListForRPC(category string, s proto.Service, r proto.RPC, config map[st
 	if !ok {
 		return map[string]bool{}, nil
 	}
-	fmt.Printf("%s for %s are %#v", category, rpcKey, i)
 	a, ok := i.([]interface{})
 	if !ok {
 	return nil, fmt.Errorf("Couldnt get list for key %s: %#v", rpcKey, i)

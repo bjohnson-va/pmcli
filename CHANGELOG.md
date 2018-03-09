@@ -1,3 +1,6 @@
+1.5.1
+- Removing debug prints
+
 1.5.0
 - Add support for `exclusions`
 
