@@ -1,3 +1,6 @@
+1.5.2
+- Correction to debug log
+
 1.5.1
 - Removing debug prints
 

@@ -159,7 +159,7 @@ func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadc
 			fBreadcrumb = breadcrumb + "." + f.Name
 		}
 		if c.GetExcludeInstruction(fBreadcrumb) {
-			logging.Debugf(ctx, "%s is excluded via config file", breadcrumb)
+			logging.Debugf(ctx, "%s is excluded via config file", fBreadcrumb)
 			continue;
 		}
 		var value interface{}
