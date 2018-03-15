@@ -121,19 +121,24 @@ func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d 
 	return nil
 }
 
-func buildServerMux(ctx context.Context, d serverDetails, c *config.File) (
+func buildServerMux(ctx context.Context, d serverDetails, configs *config.File) (
 	*http.ServeMux, error) {
 
 	r := initializeRandomProvider(ctx, d.randomSeed)
 
+	ao := configs.AllowedOrigin
+	if ao == "" {
+		ao = d.allowedOrigin
+	}
+
 	mux := http.NewServeMux()
 	hbc := handlers.HandlerBuildingConfig{
-		AllowedOrigin:     d.allowedOrigin,
+		AllowedOrigin:     ao,
 		ProtofileRootPath: d.rootDir,
-		AllConfig:         c.ConfigMap,
-		RandomProvider: &r,
+		AllConfig:         configs.ConfigMap,
+		RandomProvider:    &r,
 	}
-	for _, p := range c.ProtofileNames {
+	for _, p := range configs.ProtofileNames {
 		h, err := handlers.FromProtofile(hbc, p)
 		if err != nil {
 			return nil, fmt.Errorf("failed to make handlers: %s", err.Error())

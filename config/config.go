@@ -117,6 +117,7 @@ func readListForRPC(category string, s proto.Service, r proto.RPC, config map[st
 type File struct {
 	ConfigMap map[string]interface{}
 	ProtofileNames []string
+	AllowedOrigin string
 }
 
 // TODO: Don't use this legacy fallback in v2.0.0+
@@ -170,8 +171,11 @@ func parseConfig(fileContents []byte) (*File, error) {
 		protofiles[idx] = fmt.Sprintf("%s", pf)
 	}
 
+	allowedOrigin, _ := i["allowedOrigin"].(string)
+
 	return &File{
 		ConfigMap: i,
 		ProtofileNames: protofiles,
+		AllowedOrigin: allowedOrigin,
 	}, nil
 }
