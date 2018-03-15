@@ -139,11 +139,6 @@ func delay(ctx context.Context, seconds float64) {
 	time.Sleep(time.Second * time.Duration(seconds))
 }
 
-func randomEnum(enum proto.Enum) proto.EnumField {
-	possibleEnumValues := parse.EnumFields(enum.Elements)
-	return possibleEnumValues[0] // TODO: Randomize
-}
-
 func GenerateRandomFieldsForMessage(ctx context.Context, p *random.FieldProvider,
 	message proto.Message, t *parse.FieldTypes, c *config.Inputs) interface{} {
 	return randomFieldsForMessage(ctx, p, "", 1, message, t, c)
@@ -200,7 +195,7 @@ func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb st
 		logging.Infof(ctx, "Using override for %s: %s", breadcrumb, override)
 		return override, nil
 	}
-	supercrumb := fmt.Sprintf("breadcrumb%d", individualizer)
+	supercrumb := fmt.Sprintf("%s%d", breadcrumb, individualizer)
 	if field.Type == "string" || field.Type == "bytes" {
 		return p.NewString(supercrumb), nil
 	}
@@ -231,7 +226,7 @@ func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb st
 
 	for _, e := range t.Enums {
 		if fieldType == e.Name {
-			return randomEnum(e).Name, nil
+			return p.NewEnumValue(supercrumb, e), nil
 		}
 	}
 
@@ -239,7 +234,7 @@ func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb st
 		if m.Name == fieldType {
 			if isEnum {
 				for _, e := range parse.Enums(m.Elements) {
-					return randomEnum(e).Name, nil
+					return p.NewEnumValue(supercrumb, e), nil
 				}
 			}
 			ni := individualizer * 10

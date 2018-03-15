@@ -60,7 +60,7 @@ func (p unseededRandomFieldProvider) NewEnumValue(breadcrumb string, enum proto.
 	p.Seed(breadcrumb)
 	possibleEnumValues := parse.EnumFields(enum.Elements)
 	r := rand.Intn(len(possibleEnumValues))
-	return fmt.Sprintf("%s", possibleEnumValues[r])
+	return fmt.Sprintf("%s", possibleEnumValues[r].Name)
 }
 
 func (p unseededRandomFieldProvider) NewTimestamp(breadcrumb string) string {
@@ -75,12 +75,13 @@ func (p unseededRandomFieldProvider) NewInt32(breadcrumb string) int32 {
 
 func (p unseededRandomFieldProvider) NewFloat32(breadcrumb string) float32 {
 	p.Seed(breadcrumb)
-	return rand.Float32()
+	return float32(p.NewFloat64(breadcrumb))
 }
 
 func (p unseededRandomFieldProvider) NewFloat64(breadcrumb string) float64 {
 	p.Seed(breadcrumb)
-	return rand.Float64()
+	stdDev := 1e12
+	return rand.NormFloat64() * stdDev // TODO: How to provide useful values?
 }
 
 func (p unseededRandomFieldProvider) NewString(breadcrumb string) string {
