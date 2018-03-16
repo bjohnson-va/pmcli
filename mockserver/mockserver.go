@@ -50,7 +50,7 @@ func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d s
 		logging.Infof(ctx, "Running HTTP server on port %d...", d.port)
 		err := srv.ListenAndServe()
 		if err != nil {
-			fmt.Printf("Error on ListenAndServe: %s", err.Error())
+			logging.Errorf(ctx, "Error on ListenAndServe: %s", err.Error())
 		}
 	}()
 	err = startNewServerOnConfigFileChanges(ctx, srv, d)
@@ -94,12 +94,19 @@ func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d 
 				if event.Op&fsnotify.Write == fsnotify.Write {
 					logging.Infof(ctx, "modified file: %s", event.Name)
 				}
-				srv.Shutdown(ctx)
-				err := runServerInBackgroundAndRestartOnConfigFileChanges(ctx, d)
-				if err != nil {
-					logging.Errorf(ctx, "Error starting new server after config change: %s", err.Error())
+				if srv != nil {
+					srv.Shutdown(ctx)
 				}
+				err := runServerInBackgroundAndRestartOnConfigFileChanges(ctx, d)
 				watcher.Close()
+				if err != nil {
+					logging.Infof(ctx, "Error starting new server after config change: %s", err.Error())
+					logging.Infof(ctx, "Will retry on further changes")
+					e := startNewServerOnConfigFileChanges(ctx, nil, d)
+					if e != nil {
+						logging.Errorf(ctx, "Unable to start file watcher: %s", e.Error())
+					}
+				}
 
 			case err := <-watcher.Errors:
 				logging.Errorf(ctx, "Error watching for config file changes: %s", err.Error())
