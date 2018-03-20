@@ -78,26 +78,28 @@ directory from which it was run.
     "advertising/v1/api.proto"
   ],
   "overrides": {
-    "Campaigns.List": {
-      "campaigns.business_id": "MY-OVERRIDE"
+    "Campaigns/List": {
+      "campaigns.businessId": "MY-OVERRIDE"
     },
-    "Adwords.GetStatsForBusiness": {
+    "Adwords/GetStatsForBusiness": {
       "conversions": 1,
-      "cost_microdollars": 1000000.00
+      "costMicrodollars": 1000000.00
     }
   },
   "instructions": {
-    "delaySeconds": 0.55,
-    "Campaigns.List": {
+    "Campaigns/List": {
+      "delaySeconds": 0.55,
       "statusCode": 200,
       "emptyBody": false,
-      "campaigns": {
-        "num": 1
+      "fields": {
+        "campaigns": {
+          "num": 2
+        }
       }
     }
-  }
+  },
   "exclusions": {
-    "Adwords.GetAccountInfo": [
+    "Adwords/GetAccountInfo": [
       "account_info"
     ]
   }
@@ -144,7 +146,7 @@ Note that, since `campaigns` is a list field, *every* businessId field will be
 overridden.  This is a limitation of pmcli and will likely be address later.
 
 Also note that override was provided in `snake_case` but the response was
-generated in `camelCase`.
+generated in `camelCase`.  *pmcli* will accept field keys in either format.
 
 ---
 
@@ -157,14 +159,22 @@ empty body.
 
 `delaySeconds`: The number of seconds to wait before the response is returned.
 
-`num`: Specified on a specific field of an RPC.  Determines how many items will
-be in the randomly generated list that is output from the API.
+`fields`: A json dict containing field-specific instructions
+
+### Instructions - Fields
+
+These instructions apply to specific fields of an RPC's response body.
+
+`num`: Determines how many items will be in the randomly generated list that is
+output from the API.
 
 E.g.
 ```
-  "Some.RPC": {
-    "some_repeated_field": {
-      "num": 5
+  "SomeService/SomeRPC": {
+    "fields": {
+      "someRepeatedField": {
+        "num": 5
+      }
     }
   }
 ```
@@ -172,5 +182,7 @@ E.g.
 ---
 
 ### Exclusions:
+
+NOTE: **Exclusions must be specified in snake_case.  This is temporary.**
 
 This is a list of fields that should not be included in the response at all.

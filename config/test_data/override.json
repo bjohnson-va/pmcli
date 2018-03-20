@@ -1,0 +1,10 @@
+{
+  "protofiles": [
+    "unused but required"
+  ],
+  "overrides": {
+    "AnyService/SomeRPC": {
+      "a.field": "value specified in file"
+    }
+  }
+}

@@ -6,12 +6,13 @@ import (
 	"os"
 	"io/ioutil"
 	"encoding/json"
+	"github.com/vendasta/gosdks/util"
 )
 
 type Inputs struct {
 	RPCName        string
 	ProtofileNames []string
-	Overrides      map[string]interface{}
+	overrides      map[string]interface{}
 	Instructions   map[string]interface{}
 	Exclusions 	   map[string]bool
 }
@@ -25,17 +26,46 @@ func (c *Inputs) GetRPCInstruction(instruction string, defaultValue interface{})
 	return defaultValue
 }
 
-func (c *Inputs) GetFieldInstruction(fieldBreadcrumb string, instruction string, defaultValue interface{}) interface{} {
-	i, ok := c.Instructions[fieldBreadcrumb].(map[string]interface{})
+func (c *Inputs) GetFieldOverride(fieldBreadcrumb string, defaultValue interface{}) interface{} {
+	return getFieldConfig(c.overrides, fieldBreadcrumb, defaultValue)
+}
+
+func (c *Inputs) GetFieldInstruction(fieldBreadcrumb string, instructionKey string, defaultValue interface{}) interface{} {
+
+	fields, ok := c.Instructions["fields"].(map[string]interface{})
+	if !ok {
+		return defaultValue
+	}
+	cf := getFieldConfig(fields, fieldBreadcrumb, defaultValue).(map[string]interface{})
+	instruction, ok := cf[instructionKey]
 	if ok {
-		if i != nil {
-			num, ok := i[instruction]
-			if ok {
-				return num
-			} // else not specified in config file
-		}
+		return instruction
+	}
+	// else not specified in config file
+	return defaultValue
+}
+
+func getFieldConfig(fields map[string]interface{}, fieldBreadcrumb string, defaultValue interface{}) interface{} {
+	c := getConfig(fields, fieldBreadcrumb)
+	if c != nil {
+		return c
+	}
+	camelKey := util.ToCamelCase(fieldBreadcrumb)
+	c = getConfig(fields, camelKey)
+	if c != nil {
+		return c
 	}
 	return defaultValue
+}
+
+func getConfig(fields map[string]interface{}, fieldBreadcrumb string) interface{} {
+	i, ok := fields[fieldBreadcrumb]
+	if ok {
+		if i != nil {
+			return i
+		}
+	}
+	return nil
 }
 
 // GetExcludeInstruction returns true if the given breadcrumb has been excluded
@@ -63,13 +93,12 @@ func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}
 	return &Inputs{
 		RPCName:      r.Name,
 		Instructions: i,
-		Overrides:    o,
+		overrides:    o,
 		Exclusions:   e,
 	}, nil
 }
 
 func readForRPC(category string, s proto.Service, r proto.RPC, config map[string]interface{}) (map[string]interface{}, error) {
-	key := s.Name + "." + r.Name
 	c, ok := config[category]
 	if !ok {
 		return map[string]interface{}{}, nil
@@ -78,9 +107,14 @@ func readForRPC(category string, s proto.Service, r proto.RPC, config map[string
 	if !ok {
 		return nil, fmt.Errorf("invalid format for config section: %s", category)
 	}
+	key := s.Name + "/" + r.Name
 	i, ok := configMap[key]
 	if !ok {
-		return map[string]interface{}{}, nil
+		legacyKey := s.Name + "." + r.Name
+		i, ok = configMap[legacyKey]
+		if !ok {
+			return map[string]interface{}{}, nil
+		}
 	}
 	a, ok := i.(map[string]interface{})
 	if !ok {

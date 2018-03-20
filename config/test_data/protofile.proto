@@ -1,0 +1,11 @@
+message SomeRPCRequest {
+
+}
+
+message SomeRPCResponse {
+
+}
+
+service AnyService {
+    rpc SomeRPC (SomeRPCRequest) returns (SomeRPCResponse) {};
+}

@@ -186,11 +186,7 @@ func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadc
 
 
 func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb string, individualizer int, field proto.Field, t *parse.FieldTypes, c *config.Inputs) (interface{}, error) {
-	// TODO: randomFieldValue should produce consistent pseudorandom values that dont repeat
-	override, ok := c.Overrides[breadcrumb] // TODO: Decide to use snake (from proto) or camel (from endpoints)
-	if !ok {
-		// Override wasn't specified for this breadcrumb
-	}
+	override := c.GetFieldOverride(breadcrumb, nil)
 	if override != nil {
 		logging.Infof(ctx, "Using override for %s: %s", breadcrumb, override)
 		return override, nil

@@ -1,0 +1,14 @@
+{
+  "protofiles": [
+    "unused but required"
+  ],
+  "instructions": {
+    "AnyService/SomeRPC": {
+      "fields": {
+        "a.field": {
+          "an_instruction": "value specified in file"
+        }
+      }
+    }
+  }
+}
