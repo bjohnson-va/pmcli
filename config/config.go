@@ -118,6 +118,7 @@ type File struct {
 	ConfigMap map[string]interface{}
 	ProtofileNames []string
 	AllowedOrigin string
+	Port int64
 }
 
 // TODO: Don't use this legacy fallback in v2.0.0+
@@ -171,11 +172,20 @@ func parseConfig(fileContents []byte) (*File, error) {
 		protofiles[idx] = fmt.Sprintf("%s", pf)
 	}
 
-	allowedOrigin, _ := i["allowedOrigin"].(string)
+	allowedOrigin, ok := i["allowedOrigin"].(string)
+	if !ok {
+		allowedOrigin = ""
+	}
+	pf, ok := i["port"].(float64)
+	port := int64(-1)
+	if ok {
+		port = int64(pf)
+	}
 
 	return &File{
 		ConfigMap: i,
 		ProtofileNames: protofiles,
 		AllowedOrigin: allowedOrigin,
+		Port: port,
 	}, nil
 }

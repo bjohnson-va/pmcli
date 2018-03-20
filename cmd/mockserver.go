@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	mockServerPort int
+	mockServerPort int64
 	mockServerAllowedOrigin string
 	mockServerSource string
 	mockServerConfigFile string
@@ -23,7 +23,7 @@ var (
 )
 
 func init() {
-	mockServerCmd.Flags().IntVarP(&mockServerPort, "port", "p",
+	mockServerCmd.Flags().Int64VarP(&mockServerPort, "port", "p",
 		20001,
 		"Sets the port of the mocked server")
 

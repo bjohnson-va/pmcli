@@ -14,7 +14,7 @@ import (
 
 // TODO: Helper for generating initial config file
 
-func BuildAndRun(mockServerPort int, allowedOrigin string,
+func BuildAndRun(mockServerPort int64, allowedOrigin string,
 	rootDir string, configFile string, randomSeed string) error {
 	ctx := context.Background()
 
@@ -33,7 +33,7 @@ func BuildAndRun(mockServerPort int, allowedOrigin string,
 }
 
 type serverDetails struct {
-	port           int
+	port           int64
 	allowedOrigin  string
 	rootDir        string
 	configFilePath string
@@ -47,7 +47,6 @@ func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d s
 		return fmt.Errorf("problem preparing server: %s", err.Error())
 	}
 	go func() {
-		logging.Infof(ctx, "Running HTTP server on port %d...", d.port)
 		err := srv.ListenAndServe()
 		if err != nil {
 			logging.Errorf(ctx, "Error on ListenAndServe: %s", err.Error())
@@ -66,6 +65,11 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (*http.Server
 		return nil, fmt.Errorf("error reading config [%s]: %s", d.configFilePath, err.Error())
 	}
 
+	port := cfg.Port
+	if port == -1 {
+		port = d.port
+	}
+
 	mux, err := buildServerMux(ctx, d, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build server mux: %s", err.Error())
@@ -74,6 +78,7 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (*http.Server
 		Addr:    fmt.Sprintf(":%d", d.port),
 		Handler: mux,
 	}
+	logging.Infof(ctx, "Ready to serve on port %d...", port)
 	return httpSrv, nil
 
 }
