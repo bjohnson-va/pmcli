@@ -24,7 +24,7 @@ var (
 
 func init() {
 	mockServerCmd.Flags().Int64VarP(&mockServerPort, "port", "p",
-		20001,
+		-1,
 		"Sets the port of the mocked server")
 
 	mockServerCmd.Flags().StringVarP(&mockServerAllowedOrigin, "allowedOrigin", "b",

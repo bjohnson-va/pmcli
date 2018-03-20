@@ -64,23 +64,28 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (*http.Server
 	if err != nil {
 		return nil, fmt.Errorf("error reading config [%s]: %s", d.configFilePath, err.Error())
 	}
-
-	port := cfg.Port
-	if port == -1 {
-		port = d.port
-	}
-
+	port := determinePortNumber(d, cfg)
 	mux, err := buildServerMux(ctx, d, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build server mux: %s", err.Error())
 	}
 	httpSrv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", d.port),
+		Addr:    fmt.Sprintf(":%d", port),
 		Handler: mux,
 	}
 	logging.Infof(ctx, "Ready to serve on port %d...", port)
 	return httpSrv, nil
+}
 
+func determinePortNumber(d serverDetails, cfg *config.File) int64 {
+	port := d.port
+	if port == -1 {
+		port = cfg.Port
+		if port == -1 {
+			port = 29000
+		}
+	}
+	return port
 }
 
 func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d serverDetails) error {
