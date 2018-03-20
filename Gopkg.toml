@@ -21,3 +21,7 @@
 [[constraint]]
   name = "github.com/vendasta/mscli"
   version = "^5.5.1"
+
+[[constraint]]a
+  name = "google.golang.org/api"
+  revision = "a27ddaf5ce0ce688be462071a9e55566e60bb59e"
