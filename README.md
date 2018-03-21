@@ -29,6 +29,9 @@ Example:
 }
 ```
 
+The config file is a major component of *pmcli*'s operation. See 
+[Configuration](#configuration) for more info.
+
 ### Additional options
 *pmcli* can be run with command-line flags
 Use `pmcli -h` for more info.
@@ -89,6 +92,8 @@ message have different values, the `time` R.S. also factors in the breadcrumbs.
 ## Configuration
 By default, *pmcli* will attempt to read the file `mockserver.json` in the same
 directory from which it was run.
+
+Each section of this config file is explained in more detail below the example.
 
 ### Example `mockserver.json`
 ```json
