@@ -13,13 +13,13 @@ type Inputs struct {
 	RPCName        string
 	ProtofileNames []string
 	overrides      map[string]interface{}
-	Instructions   map[string]interface{}
-	Exclusions 	   map[string]bool
+	instructions   map[string]interface{}
+	exclusions     map[string]bool
 }
 
 func (c *Inputs) GetRPCInstruction(instruction string, defaultValue interface{}) interface{} {
 	var statusCode interface{}
-	statusCode, ok := c.Instructions[instruction]
+	statusCode, ok := c.instructions[instruction]
 	if ok {
 		return statusCode
 	}
@@ -32,7 +32,7 @@ func (c *Inputs) GetFieldOverride(fieldBreadcrumb string, defaultValue interface
 
 func (c *Inputs) GetFieldInstruction(fieldBreadcrumb string, instructionKey string, defaultValue interface{}) interface{} {
 
-	fields, ok := c.Instructions["fields"].(map[string]interface{})
+	fields, ok := c.instructions["fields"].(map[string]interface{})
 	if !ok {
 		return defaultValue
 	}
@@ -68,12 +68,16 @@ func getConfig(fields map[string]interface{}, fieldBreadcrumb string) interface{
 	return nil
 }
 
-// GetExcludeInstruction returns true if the given breadcrumb has been excluded
-func (c *Inputs) GetExcludeInstruction(fieldBreadcrumb string) bool {
-	i, ok := c.Exclusions[fieldBreadcrumb]
+// GetFieldExclusion returns true if the given breadcrumb has been excluded
+func (c *Inputs) GetFieldExclusion(fieldBreadcrumb string) bool {
+	i, ok := c.exclusions[fieldBreadcrumb]
 	if ok {
 		return i
 	}
+	//i, ok = c.exclusions[util.ToCamelCase(fieldBreadcrumb)]
+	//if ok {
+	//	return i
+	//}
 	return false
 }
 
@@ -92,9 +96,9 @@ func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}
 	}
 	return &Inputs{
 		RPCName:      r.Name,
-		Instructions: i,
+		instructions: i,
 		overrides:    o,
-		Exclusions:   e,
+		exclusions:   e,
 	}, nil
 }
 
@@ -124,22 +128,26 @@ func readForRPC(category string, s proto.Service, r proto.RPC, config map[string
 }
 
 func readListForRPC(category string, s proto.Service, r proto.RPC, config map[string]interface{}) (map[string]bool, error) {
-	rpcKey := s.Name + "." + r.Name
 	c, ok := config[category]
-	if !ok {
-	return map[string]bool{}, nil
-	}
-	exclusionsByRPC, ok := c.(map[string]interface{})
-	if !ok {
-	return nil, fmt.Errorf("invalid format for exclusion section: %s", category)
-	}
-	i, ok := exclusionsByRPC[rpcKey]
 	if !ok {
 		return map[string]bool{}, nil
 	}
+	exclusionsByRPC, ok := c.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid format for exclusion section: %s", category)
+	}
+	rpcKey := s.Name + "/" + r.Name
+	i, ok := exclusionsByRPC[rpcKey]
+	if !ok {
+		legacyKey := s.Name + "." + r.Name
+		i, ok = exclusionsByRPC[legacyKey]
+		if !ok {
+			return map[string]bool{}, nil
+		}
+	}
 	a, ok := i.([]interface{})
 	if !ok {
-	return nil, fmt.Errorf("Couldnt get list for key %s: %#v", rpcKey, i)
+		return nil, fmt.Errorf("Couldnt get list for key %s: %#v", rpcKey, i)
 	}
 	var out = map[string]bool{}
 	for _, x := range a {
@@ -149,16 +157,16 @@ func readListForRPC(category string, s proto.Service, r proto.RPC, config map[st
 }
 
 type File struct {
-	ConfigMap map[string]interface{}
+	ConfigMap      map[string]interface{}
 	ProtofileNames []string
-	AllowedOrigin string
-	Port int64
+	AllowedOrigin  string
+	Port           int64
 }
 
 // TODO: Don't use this legacy fallback in v2.0.0+
 var legacyFallback = File{
-ConfigMap: make(map[string]interface{}),
-ProtofileNames: []string{"advertising/v1/api.proto"},
+	ConfigMap:      make(map[string]interface{}),
+	ProtofileNames: []string{"advertising/v1/api.proto"},
 }
 
 func ReadFile(filename string) (*File, error) {
@@ -217,9 +225,9 @@ func parseConfig(fileContents []byte) (*File, error) {
 	}
 
 	return &File{
-		ConfigMap: i,
+		ConfigMap:      i,
 		ProtofileNames: protofiles,
-		AllowedOrigin: allowedOrigin,
-		Port: port,
+		AllowedOrigin:  allowedOrigin,
+		Port:           port,
 	}, nil
 }

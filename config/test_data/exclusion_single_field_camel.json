@@ -1,0 +1,10 @@
+{
+  "protofiles": [
+    "unused but required"
+  ],
+  "exclusions": {
+    "AnyService/SomeRPC": [
+      "some.fieldWithALongName"
+    ]
+  }
+}

@@ -114,3 +114,69 @@ func TestParsesInstructionForFieldGivenInCamelCase(t *testing.T) {
 	assert.Equal(t, instruction, "value specified in file")
 }
 
+func TestParsesKnownGoodFieldExclusionFromFileWithLegacyRPCFormat(t *testing.T) {
+	c, _ := config.ReadFile("./test_data/exclusion_legacy_single_field.json")
+	service := proto.Service{
+		Name: "AnyService",
+	}
+	rpc := proto.RPC{
+		Name: "SomeRPC",
+	}
+	inputs, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
+	instruction := inputs.GetFieldExclusion("a.field")
+	assert.Equal(t, instruction, true)
+}
+
+func TestParsesKnownGoodFieldExclusionFromFile(t *testing.T) {
+	c, _ := config.ReadFile("./test_data/exclusion_single_field.json")
+	service := proto.Service{
+		Name: "AnyService",
+	}
+	rpc := proto.RPC{
+		Name: "SomeRPC",
+	}
+	inputs, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
+	instruction := inputs.GetFieldExclusion("a.field")
+	assert.Equal(t, instruction, true)
+}
+
+func TestParsesExclusionForFieldGivenInSnakeCase(t *testing.T) {
+	c, _ := config.ReadFile("./test_data/exclusion_single_field_snake.json")
+	service := proto.Service{
+		Name: "AnyService",
+	}
+	rpc := proto.RPC{
+		Name: "SomeRPC",
+	}
+	inputs, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
+	instruction := inputs.GetFieldExclusion("some.field_with_a_long_name")
+	assert.Equal(t, instruction, true)
+}
+
+func TestParsesExclusionForFieldGivenInCamelCase(t *testing.T) {
+	c, _ := config.ReadFile("./test_data/exclusion_single_field_camel.json")
+	service := proto.Service{
+		Name: "AnyService",
+	}
+	rpc := proto.RPC{
+		Name: "SomeRPC",
+	}
+	inputs, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
+	instruction := inputs.GetFieldExclusion("some.fieldWithALongName")
+	assert.Equal(t, instruction, true)
+}
+
+func TestReturnsFalseExclusionForFieldNotInFile(t *testing.T) {
+	c, _ := config.ReadFile("./test_data/exclusion_single_field.json")
+	service := proto.Service{
+		Name: "AnyService",
+	}
+	rpc := proto.RPC{
+		Name: "SomeRPC",
+	}
+	inputs, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
+	instruction := inputs.GetFieldExclusion("doNotSpecifyThisInTestFile")
+	assert.Equal(t, instruction, false)
+}
+
+
