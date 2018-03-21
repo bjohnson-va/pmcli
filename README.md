@@ -208,6 +208,4 @@ E.g.
 
 ### Exclusions:
 
-NOTE: **Exclusions must be specified in snake_case.  This is temporary.**
-
 This is a list of fields that should not be included in the response at all.
