@@ -7,12 +7,31 @@
 pmcli serve
 ```
 
-### Additional options
-```
--p: port on which to serve generated responsed
+### Requirements
+Before you can run `pmcli serve`, you should set up a minimal configuration 
+file called mockserver.json.  Put this file in the directory from which you 
+will be running *pmcli*.  This will typically be the root directory of the
+project you will be a running a mockserver *in place of*.
 
-    E.g. pmcli serve -p 28003
+Example:
+```json
+{
+  "port": 28000,
+  "protofiles": [
+    "advertising/v1/api.proto"
+  ],
+  "overrides": {
+  },
+  "instructions": {
+  },
+  "exclusions": {
+  }
+}
 ```
+
+### Additional options
+*pmcli* can be run with command-line flags
+Use `pmcli -h` for more info.
 
 ## Randomization Strategies (R.S.)
 
