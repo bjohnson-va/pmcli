@@ -167,10 +167,11 @@ would be:
 ```
 
 Note that, since `campaigns` is a list field, *every* businessId field will be
-overridden.  This is a limitation of pmcli and will likely be address later.
+overridden.  This is a limitation of pmcli and will likely be addressed later.
 
 Also note that override was provided in `snake_case` but the response was
-generated in `camelCase`.  *pmcli* will accept field keys in either format.
+generated in `camelCase`.  *pmcli* will accept field keys in either format 
+but will always generate its responses in `camelCase`.
 
 ---
 
