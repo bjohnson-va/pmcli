@@ -65,7 +65,12 @@ func (p unseededRandomFieldProvider) NewEnumValue(breadcrumb string, enum proto.
 
 func (p unseededRandomFieldProvider) NewTimestamp(breadcrumb string) string {
 	p.Seed(breadcrumb)
-	return "2016-01-01" // TODO: this!
+	min := time.Date(1970, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
+	max := time.Date(2070, 1, 0, 0, 0, 0, 0, time.UTC).Unix()
+	delta := max - min
+
+	sec := rand.Int63n(delta) + min
+	return time.Unix(sec, 0).Format("2006-01-02T15:04:05.999999999Z")
 }
 
 func (p unseededRandomFieldProvider) NewInt32(breadcrumb string) int32 {
