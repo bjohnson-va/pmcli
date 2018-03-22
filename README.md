@@ -34,7 +34,7 @@ The config file is a major component of *pmcli*'s operation. See
 
 ### Additional options
 *pmcli* can be run with command-line flags
-Use `pmcli -h` for more info.
+Use `pmcli serve -h` for more info.
 
 ## Randomization Strategies (R.S.)
 
