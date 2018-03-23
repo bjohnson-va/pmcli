@@ -19,6 +19,24 @@ type FieldTypes struct {
 	Enums []proto.Enum
 }
 
+func (t FieldTypes) GetMatchingMessage(fieldType string) *proto.Message {
+	for _, m := range t.Messages {
+		if m.Name == fieldType {
+			return &m
+		}
+	}
+	return nil
+}
+
+func GetMessageReturnedByRPC(rpc proto.RPC, all FieldTypes) (*proto.Message, error) {
+	for _, m := range all.Messages {
+		if m.Name == rpc.ReturnsType {
+			return &m, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to match message to: %s", rpc.ReturnsType)
+}
+
 // AllFieldTypesFromProtos reads the given proto files (and all files it imports)
 // and returns a collection of all Messages and Enums that were defined.
 func AllFieldTypesFromProtos(rootPath string, definition *proto.Proto) (*FieldTypes, error) {

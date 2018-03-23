@@ -9,7 +9,14 @@ import (
 	"github.com/vendasta/gosdks/util"
 )
 
-type Inputs struct {
+type InputsProvider interface {
+	GetRPCInstruction(instruction string, defaultValue interface{}) interface{}
+	GetFieldOverride(fieldBreadcrumb string, defaultValue interface{}) interface{}
+	GetFieldExclusion(fieldBreadcrumb string) bool
+	GetFieldInstruction(fieldBreadcrumb string, instructionKey string, defaultValue interface{}) interface{}
+}
+
+type inputs struct {
 	RPCName        string
 	ProtofileNames []string
 	overrides      map[string]interface{}
@@ -17,7 +24,7 @@ type Inputs struct {
 	exclusions     map[string]bool
 }
 
-func (c *Inputs) GetRPCInstruction(instruction string, defaultValue interface{}) interface{} {
+func (c *inputs) GetRPCInstruction(instruction string, defaultValue interface{}) interface{} {
 	var statusCode interface{}
 	statusCode, ok := c.instructions[instruction]
 	if ok {
@@ -26,17 +33,20 @@ func (c *Inputs) GetRPCInstruction(instruction string, defaultValue interface{})
 	return defaultValue
 }
 
-func (c *Inputs) GetFieldOverride(fieldBreadcrumb string, defaultValue interface{}) interface{} {
+func (c *inputs) GetFieldOverride(fieldBreadcrumb string, defaultValue interface{}) interface{} {
 	return getFieldConfig(c.overrides, fieldBreadcrumb, defaultValue)
 }
 
-func (c *Inputs) GetFieldInstruction(fieldBreadcrumb string, instructionKey string, defaultValue interface{}) interface{} {
+func (c *inputs) GetFieldInstruction(fieldBreadcrumb string, instructionKey string, defaultValue interface{}) interface{} {
 
 	fields, ok := c.instructions["fields"].(map[string]interface{})
 	if !ok {
 		return defaultValue
 	}
-	cf := getFieldConfig(fields, fieldBreadcrumb, defaultValue).(map[string]interface{})
+	cf, ok := getFieldConfig(fields, fieldBreadcrumb, defaultValue).(map[string]interface{})
+	if !ok {
+		return defaultValue
+	}
 	instruction, ok := cf[instructionKey]
 	if ok {
 		return instruction
@@ -69,7 +79,7 @@ func getConfig(fields map[string]interface{}, fieldBreadcrumb string) interface{
 }
 
 // GetFieldExclusion returns true if the given breadcrumb has been excluded
-func (c *Inputs) GetFieldExclusion(fieldBreadcrumb string) bool {
+func (c *inputs) GetFieldExclusion(fieldBreadcrumb string) bool {
 	i, ok := c.exclusions[fieldBreadcrumb]
 	if ok {
 		return i
@@ -81,7 +91,7 @@ func (c *Inputs) GetFieldExclusion(fieldBreadcrumb string) bool {
 	return false
 }
 
-func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}) (*Inputs, error) {
+func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}) (InputsProvider, error) {
 	i, err := readForRPC("instructions", s, r, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read instructions: %s", err.Error())
@@ -94,12 +104,14 @@ func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}
 	if err != nil {
 		return nil, fmt.Errorf("failed to read overrides: %s", err.Error())
 	}
-	return &Inputs{
+	var in InputsProvider;
+	in = &inputs{
 		RPCName:      r.Name,
 		instructions: i,
 		overrides:    o,
 		exclusions:   e,
-	}, nil
+	}
+	return in, nil
 }
 
 func readForRPC(category string, s proto.Service, r proto.RPC, config map[string]interface{}) (map[string]interface{}, error) {

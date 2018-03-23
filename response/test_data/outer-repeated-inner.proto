@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+message RepeatedMessage {
+    string innerField = 1;
+}
+
+message Request {
+}
+
+service Service {
+    rpc RPC (Request) returns (OuterMessage) {};
+}
+
+message OuterMessage {
+    repeated RepeatedMessage repeatedField = 1;
+}
+

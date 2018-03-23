@@ -4,16 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"github.com/emicklei/proto"
 	"github.com/bjohnson-va/pmcli/protofiles"
 	"github.com/bjohnson-va/pmcli/parse"
 	"github.com/bjohnson-va/pmcli/config"
-	"github.com/vendasta/gosdks/util"
 	"context"
 	"github.com/vendasta/gosdks/logging"
 	"time"
 	"github.com/bjohnson-va/pmcli/random"
+	"github.com/bjohnson-va/pmcli/response"
 )
 
 type HTTPHandler struct {
@@ -53,25 +52,27 @@ func FromProtofile(c HandlerBuildingConfig, protofileName string) ([]HTTPHandler
 
 func buildHandlersForServices(hbc HandlerBuildingConfig, services []proto.Service, packageName string, t *parse.FieldTypes) ([]HTTPHandler, error) {
 	var handlers []HTTPHandler
+	rand := hbc.RandomProvider
 	for _, s := range services {
 		rpcs := parse.RPCs(s.Elements)
 		for _, r := range rpcs {
-			p := "/" + packageName + "." + s.Name + "/" + r.Name // TODO: . should be /
+			p := "/" + packageName + "." + s.Name + "/" + r.Name
 			c, err := config.GetInputsForRPC(s, r, hbc.AllConfig)
 			if err != nil {
 				return nil, fmt.Errorf("problem reading config: %s", err.Error())
 			}
-			newHandler := fakeHandler(hbc.AllowedOrigin, p, r, t, hbc.RandomProvider, c)
-			handlers = append(handlers, newHandler)
+			newHandler, err := fakeHandler(hbc.AllowedOrigin, p, r, t, rand, c)
+			if err != nil {
+				msg := "unable to build mock handler for %s: %s"
+				return nil, fmt.Errorf(msg, p, err.Error())
+			}
+			handlers = append(handlers, *newHandler)
 		}
 	}
 	return handlers, nil
 }
 
-
-
-
-func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.FieldTypes, p *random.FieldProvider, c *config.Inputs) HTTPHandler {
+func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.FieldTypes, p *random.FieldProvider, c config.InputsProvider) (*HTTPHandler, error) {
 	ctx := context.Background() // New Handler -> new Context
 	// json unmarshal defaults to float64
 	statusCode := int(c.GetRPCInstruction("statusCode", 200.0).(float64))
@@ -79,7 +80,7 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 	emptyBody := c.GetRPCInstruction("emptyBody", false).(bool)
 
 	if emptyBody || rpc.ReturnsType == "google.protobuf.Empty" {
-		return HTTPHandler{
+		return &HTTPHandler{
 			Path: path,
 			HandlerFunc: func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
@@ -94,18 +95,12 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(statusCode)
 			},
-		}
+		}, nil
 	}
 
-	foundMessage := (*proto.Message)(nil)
-	for _, m := range t.Messages {
-		if m.Name == rpc.ReturnsType {
-			foundMessage = &m;
-			break;
-		}
-	}
-	if foundMessage == nil {
-		panic(fmt.Sprintf("Did not find definition for message %s", rpc.ReturnsType))
+	foundMessage, err := parse.GetMessageReturnedByRPC(rpc, *t)
+	if err != nil {
+		return nil, fmt.Errorf("problem with mock handler inputs: %s", err.Error())
 	}
 
 	fn := func(w http.ResponseWriter, r *http.Request) {
@@ -125,10 +120,10 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 		marshaled, _ := json.Marshal(obj)
 		w.Write(([]byte)(marshaled))
 	}
-	return HTTPHandler{
+	return &HTTPHandler{
 		Path:        path,
 		HandlerFunc: fn,
-	}
+	}, nil
 }
 
 func delay(ctx context.Context, seconds float64) {
@@ -140,102 +135,6 @@ func delay(ctx context.Context, seconds float64) {
 }
 
 func GenerateRandomFieldsForMessage(ctx context.Context, p *random.FieldProvider,
-	message proto.Message, t *parse.FieldTypes, c *config.Inputs) interface{} {
-	return randomFieldsForMessage(ctx, p, "", 1, message, t, c)
-}
-
-func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadcrumb string, individualizer int, message proto.Message,
-	t *parse.FieldTypes, c *config.Inputs) interface{} {
-	obj := make(map[string]interface{})
-	fieldz := parse.Fields(message.Elements)
-	for _, f := range fieldz {
-		fBreadcrumb := f.Name
-		if breadcrumb != "" {
-			fBreadcrumb = breadcrumb + "." + f.Name
-		}
-		if c.GetFieldExclusion(fBreadcrumb) {
-			logging.Debugf(ctx, "%s is excluded via config file", fBreadcrumb)
-			continue;
-		}
-		var value interface{}
-		if f.Repeated {
-			// json unmarshal defaults to float64
-			length := int(c.GetFieldInstruction(fBreadcrumb, "num", 1.0).(float64))
-			var list []interface{}
-			for x := 0; x < length; x++ {
-				z, err := randomFieldValue(ctx, *p, fBreadcrumb, x + 1, *f.Field, t, c)
-				if err != nil {
-					value = err.Error()
-					break
-				}
-				list = append(list, z)
-			}
-			value = list
-		} else {
-			var err error
-			ni := individualizer * 10
-			value, err = randomFieldValue(ctx, *p, fBreadcrumb, ni, *f.Field, t, c)
-			if err != nil {
-				value = err.Error() // Expose the error to the user of the API
-			}
-		}
-		obj[util.ToCamelCase(f.Name)] = value
-	}
-	return obj
-}
-
-
-func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb string, individualizer int, field proto.Field, t *parse.FieldTypes, c *config.Inputs) (interface{}, error) {
-	override := c.GetFieldOverride(breadcrumb, nil)
-	if override != nil {
-		logging.Infof(ctx, "Using override for %s: %v", breadcrumb, override)
-		return override, nil
-	}
-	supercrumb := fmt.Sprintf("%s%d", breadcrumb, individualizer)
-	if field.Type == "string" || field.Type == "bytes" {
-		return p.NewString(supercrumb), nil
-	}
-	if strings.Contains(field.Type, "int") {
-		return p.NewInt32(supercrumb), nil
-	}
-	if strings.Contains(field.Type, "float") {
-		return p.NewFloat32(supercrumb), nil
-	}
-	if strings.Contains(field.Type, "double") {
-		return p.NewFloat64(supercrumb), nil
-	}
-	if strings.Contains(field.Type, "bool") {
-		return p.NewBool(supercrumb), nil
-	}
-	if strings.Contains(field.Type, "google.protobuf.Timestamp") {
-		return p.NewTimestamp(supercrumb), nil // TODO: Use correct format
-	}
-
-	var isEnum bool
-	fieldType := field.Type
-	if strings.Contains(field.Type, ".") {
-		// Probably an enum.  Eg: CampaignStatus.Status
-		parts := strings.Split(field.Type, ".")
-		fieldType = parts[0]
-		isEnum = true;
-	}
-
-	for _, e := range t.Enums {
-		if fieldType == e.Name {
-			return p.NewEnumValue(supercrumb, e), nil
-		}
-	}
-
-	for _, m := range t.Messages {
-		if m.Name == fieldType {
-			if isEnum {
-				for _, e := range parse.Enums(m.Elements) {
-					return p.NewEnumValue(supercrumb, e), nil
-				}
-			}
-			ni := individualizer * 10
-			return randomFieldsForMessage(ctx, &p, breadcrumb, ni, m, t, c), nil
-		}
-	}
-	return "", fmt.Errorf("unexpected field type %s", field.Type)
+	message proto.Message, t *parse.FieldTypes, c config.InputsProvider) interface{} {
+	return response.GenerateForMessage(ctx, p, response.Initial(), message, t, c)
 }
