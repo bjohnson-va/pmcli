@@ -7,11 +7,12 @@ import (
 	"context"
 	"github.com/bjohnson-va/pmcli/protofiles"
 	"github.com/bjohnson-va/pmcli/parse"
-	"fmt"
+	"github.com/magiconair/properties/assert"
+	"github.com/bjohnson-va/pmcli/inputs"
 )
 
 type trackOverrides struct {
-	overridesRequested []string
+	overridesRequested []inputs.BreadCrumb
 }
 
 func (*trackOverrides) GetRPCInstruction(instruction string, defaultValue interface{}) interface{} {
@@ -21,7 +22,7 @@ func (*trackOverrides) GetRPCInstruction(instruction string, defaultValue interf
 // TODO: Update interface to take a breadcrumb instead of a string.
 // Then, we search the overrides for either un-numbered or numbered overrides
 // because the breadcrumb gives us positional info
-func (m *trackOverrides) GetFieldOverride(fieldBreadcrumb string, defaultValue interface{}) interface{} {
+func (m *trackOverrides) GetFieldOverride(fieldBreadcrumb inputs.BreadCrumb, defaultValue interface{}) interface{} {
 	m.overridesRequested = append(m.overridesRequested, fieldBreadcrumb)
 	return defaultValue
 }
@@ -30,9 +31,9 @@ func (*trackOverrides) GetFieldExclusion(fieldBreadcrumb string) bool {
 	return false
 }
 
-func (*trackOverrides) GetFieldInstruction(fieldBreadcrumb string, instructionKey string, defaultValue interface{}) interface{} {
-	if fieldBreadcrumb == "outerField.repeatedField" && instructionKey == "num" {
-		return 5.0
+func (*trackOverrides) GetFieldInstruction(fieldBreadcrumb inputs.BreadCrumb, instructionKey string, defaultValue interface{}) interface{} {
+	if fieldBreadcrumb.ToString() == "outerField.repeatedField" && instructionKey == "num" {
+		return 2.0
 	}
 	return defaultValue
 }
@@ -49,8 +50,15 @@ func TestRequestsOverridesUsingExpectedBreadcrumbs(t *testing.T) {
 	var fields random.FieldProvider
 	fields = random.MockFieldProvider{}
 
-	inputs := trackOverrides{}
-	bc := response.Initial().AndField("outerField")
-	response.GenerateForMessage(ctx, &fields, bc, *outerMessage, types, &inputs)
-	fmt.Printf("%v", inputs.overridesRequested)
+	track := trackOverrides{}
+	bc := inputs.InitialBreadCrumb().AndField("outerField")
+	response.GenerateForMessage(ctx, &fields, bc, *outerMessage, types, &track)
+
+	expectedOverrideRequests := []inputs.BreadCrumb{
+		inputs.InitialBreadCrumb().AndField("outerField").AndField("repeatedField").Indexed(0),
+		inputs.InitialBreadCrumb().AndField("outerField").AndField("repeatedField").Indexed(0).AndField("innerField"),
+		inputs.InitialBreadCrumb().AndField("outerField").AndField("repeatedField").Indexed(1),
+		inputs.InitialBreadCrumb().AndField("outerField").AndField("repeatedField").Indexed(1).AndField("innerField"),
+	}
+	assert.Equal(t, track.overridesRequested, expectedOverrideRequests)
 }

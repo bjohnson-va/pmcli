@@ -6,92 +6,11 @@ import (
 	"os"
 	"io/ioutil"
 	"encoding/json"
-	"github.com/vendasta/gosdks/util"
+	"github.com/bjohnson-va/pmcli/inputs"
 )
 
-type InputsProvider interface {
-	GetRPCInstruction(instruction string, defaultValue interface{}) interface{}
-	GetFieldOverride(fieldBreadcrumb string, defaultValue interface{}) interface{}
-	GetFieldExclusion(fieldBreadcrumb string) bool
-	GetFieldInstruction(fieldBreadcrumb string, instructionKey string, defaultValue interface{}) interface{}
-}
 
-type inputs struct {
-	RPCName        string
-	ProtofileNames []string
-	overrides      map[string]interface{}
-	instructions   map[string]interface{}
-	exclusions     map[string]bool
-}
-
-func (c *inputs) GetRPCInstruction(instruction string, defaultValue interface{}) interface{} {
-	var statusCode interface{}
-	statusCode, ok := c.instructions[instruction]
-	if ok {
-		return statusCode
-	}
-	return defaultValue
-}
-
-func (c *inputs) GetFieldOverride(fieldBreadcrumb string, defaultValue interface{}) interface{} {
-	return getFieldConfig(c.overrides, fieldBreadcrumb, defaultValue)
-}
-
-func (c *inputs) GetFieldInstruction(fieldBreadcrumb string, instructionKey string, defaultValue interface{}) interface{} {
-
-	fields, ok := c.instructions["fields"].(map[string]interface{})
-	if !ok {
-		return defaultValue
-	}
-	cf, ok := getFieldConfig(fields, fieldBreadcrumb, defaultValue).(map[string]interface{})
-	if !ok {
-		return defaultValue
-	}
-	instruction, ok := cf[instructionKey]
-	if ok {
-		return instruction
-	}
-	// else not specified in config file
-	return defaultValue
-}
-
-func getFieldConfig(fields map[string]interface{}, fieldBreadcrumb string, defaultValue interface{}) interface{} {
-	c := getConfig(fields, fieldBreadcrumb)
-	if c != nil {
-		return c
-	}
-	camelKey := util.ToCamelCase(fieldBreadcrumb)
-	c = getConfig(fields, camelKey)
-	if c != nil {
-		return c
-	}
-	return defaultValue
-}
-
-func getConfig(fields map[string]interface{}, fieldBreadcrumb string) interface{} {
-	i, ok := fields[fieldBreadcrumb]
-	if ok {
-		if i != nil {
-			return i
-		}
-	}
-	return nil
-}
-
-// GetFieldExclusion returns true if the given breadcrumb has been excluded
-func (c *inputs) GetFieldExclusion(fieldBreadcrumb string) bool {
-	i, ok := c.exclusions[fieldBreadcrumb]
-	if ok {
-		return i
-	}
-	//i, ok = c.exclusions[util.ToCamelCase(fieldBreadcrumb)]
-	//if ok {
-	//	return i
-	//}
-	return false
-}
-
-func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}) (InputsProvider, error) {
+func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}) (inputs.Provider, error) {
 	i, err := readForRPC("instructions", s, r, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read instructions: %s", err.Error())
@@ -104,15 +23,9 @@ func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}
 	if err != nil {
 		return nil, fmt.Errorf("failed to read overrides: %s", err.Error())
 	}
-	var in InputsProvider;
-	in = &inputs{
-		RPCName:      r.Name,
-		instructions: i,
-		overrides:    o,
-		exclusions:   e,
-	}
-	return in, nil
+	return inputs.New(r.Name, o, i, e), nil
 }
+
 
 func readForRPC(category string, s proto.Service, r proto.RPC, config map[string]interface{}) (map[string]interface{}, error) {
 	c, ok := config[category]

@@ -3,17 +3,17 @@ package response
 import (
 	"github.com/bjohnson-va/pmcli/random"
 	"github.com/bjohnson-va/pmcli/parse"
-	"github.com/bjohnson-va/pmcli/config"
 	"github.com/vendasta/gosdks/logging"
 	"github.com/vendasta/gosdks/util"
 	"context"
 	"github.com/emicklei/proto"
 	"strings"
 	"fmt"
+	"github.com/bjohnson-va/pmcli/inputs"
 )
 
-func GenerateForMessage(ctx context.Context, p *random.FieldProvider, breadcrumb BreadCrumb, message proto.Message,
-	t *parse.FieldTypes, c config.InputsProvider) interface{} {
+func GenerateForMessage(ctx context.Context, p *random.FieldProvider, breadcrumb inputs.BreadCrumb, message proto.Message,
+	t *parse.FieldTypes, c inputs.Provider) interface{} {
 	obj := make(map[string]interface{})
 	fieldz := parse.Fields(message.Elements)
 	for _, f := range fieldz {
@@ -25,7 +25,7 @@ func GenerateForMessage(ctx context.Context, p *random.FieldProvider, breadcrumb
 		var value interface{}
 		if f.Repeated {
 			// json unmarshal defaults to float64
-			instruction := c.GetFieldInstruction(fBreadcrumb.ToString(), "num", 1.0)
+			instruction := c.GetFieldInstruction(fBreadcrumb, "num", 1.0)
 			instFlt64, ok := instruction.(float64)
 			if !ok {
 				logging.Errorf(ctx, "Unexpected value for num: %#v", instruction)
@@ -43,7 +43,7 @@ func GenerateForMessage(ctx context.Context, p *random.FieldProvider, breadcrumb
 			value = list
 		} else {
 			var err error
-			value, err = randomFieldValue(ctx, *p, fBreadcrumb.Dive(), *f.Field, t, c)
+			value, err = randomFieldValue(ctx, *p, fBreadcrumb, *f.Field, t, c)
 			if err != nil {
 				value = err.Error() // Expose the error to the user of the API
 			}
@@ -53,8 +53,8 @@ func GenerateForMessage(ctx context.Context, p *random.FieldProvider, breadcrumb
 	return obj
 }
 
-func randomFieldValue(ctx context.Context, p random.FieldProvider, crumb BreadCrumb, field proto.Field, t *parse.FieldTypes, c config.InputsProvider) (interface{}, error) {
-	override := c.GetFieldOverride(crumb.ToString(), nil)
+func randomFieldValue(ctx context.Context, p random.FieldProvider, crumb inputs.BreadCrumb, field proto.Field, t *parse.FieldTypes, c inputs.Provider) (interface{}, error) {
+	override := c.GetFieldOverride(crumb, nil)
 	if override != nil {
 		logging.Infof(ctx, "Using override for %s: %v", crumb, override)
 		return override, nil
@@ -76,7 +76,7 @@ func randomFieldValue(ctx context.Context, p random.FieldProvider, crumb BreadCr
 		return p.NewBool(supercrumb), nil
 	}
 	if strings.Contains(field.Type, "google.protobuf.Timestamp") {
-		return p.NewTimestamp(supercrumb), nil // TODO: Use correct format
+		return p.NewTimestamp(supercrumb), nil
 	}
 
 	var isEnum bool
@@ -104,6 +104,6 @@ func randomFieldValue(ctx context.Context, p random.FieldProvider, crumb BreadCr
 			return p.NewEnumValue(supercrumb, e), nil
 		}
 	}
-	return GenerateForMessage(ctx, &p, crumb.Dive(), *m, t, c), nil
+	return GenerateForMessage(ctx, &p, crumb, *m, t, c), nil
 
 }
