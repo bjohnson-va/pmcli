@@ -13,6 +13,7 @@ import (
 	"time"
 	"github.com/bjohnson-va/pmcli/random"
 	"github.com/bjohnson-va/pmcli/response"
+	"github.com/bjohnson-va/pmcli/inputs"
 )
 
 type HTTPHandler struct {
@@ -72,7 +73,7 @@ func buildHandlersForServices(hbc HandlerBuildingConfig, services []proto.Servic
 	return handlers, nil
 }
 
-func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.FieldTypes, p *random.FieldProvider, c config.InputsProvider) (*HTTPHandler, error) {
+func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.FieldTypes, p *random.FieldProvider, c inputs.Provider) (*HTTPHandler, error) {
 	ctx := context.Background() // New Handler -> new Context
 	// json unmarshal defaults to float64
 	statusCode := int(c.GetRPCInstruction("statusCode", 200.0).(float64))
@@ -135,6 +136,6 @@ func delay(ctx context.Context, seconds float64) {
 }
 
 func GenerateRandomFieldsForMessage(ctx context.Context, p *random.FieldProvider,
-	message proto.Message, t *parse.FieldTypes, c config.InputsProvider) interface{} {
-	return response.GenerateForMessage(ctx, p, response.Initial(), message, t, c)
+	message proto.Message, t *parse.FieldTypes, c inputs.Provider) interface{} {
+	return response.GenerateForMessage(ctx, p, inputs.InitialBreadCrumb(), message, t, c)
 }

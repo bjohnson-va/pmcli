@@ -4,6 +4,7 @@ import "fmt"
 
 type BreadCrumb interface {
 	ToString() string // Deprecated
+	Unindexed() string
 	AndField(fieldName string) BreadCrumb
 	Indexed(index int) BreadCrumb
 	AsSuperCrumb() string
@@ -50,8 +51,12 @@ func (b BreadCrumbImpl) Indexed(index int) BreadCrumb {
 	return BreadCrumbImpl{
 		isStart:        false,
 		stringRepr:     b.stringRepr,
-		individualizer: ((b.individualizer / 10) * 10) + index + 1,
+		individualizer: ((b.individualizer / 10) * 10) + index,
 	}
+}
+
+func (b BreadCrumbImpl) Unindexed() string {
+	return b.stringRepr
 }
 
 func (b BreadCrumbImpl) AsSuperCrumb() string {

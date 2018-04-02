@@ -1,0 +1,10 @@
+{
+  "protofiles": [
+    "required", "but", "unused"
+  ],
+  "overrides": {
+    "Service.RPC": {
+      "nonRepeatedField.innerField": 456
+    }
+  }
+}

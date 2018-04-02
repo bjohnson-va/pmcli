@@ -2,6 +2,8 @@ package inputs
 
 import (
 	"github.com/vendasta/gosdks/util"
+	"fmt"
+	"strings"
 )
 
 type Provider interface {
@@ -60,17 +62,46 @@ func (c *inputs) GetFieldInstruction(fieldBreadcrumb BreadCrumb, instructionKey 
 	return defaultValue
 }
 
-func getFieldConfig(fields map[string]interface{}, fieldBreadcrumb BreadCrumb, defaultValue interface{}) interface{} {
-	c := getConfig(fields, fieldBreadcrumb.ToString())
+func getFieldConfig(fields map[string]interface{}, b BreadCrumb, defaultValue interface{}) interface{} {
+
+	indexed := buildIndexedKey(b)
+
+	fmt.Printf("Trying %s\n", indexed)
+
+	c := getConfig(fields, indexed)
 	if c != nil {
 		return c
 	}
-	camelKey := util.ToCamelCase(fieldBreadcrumb.ToString())
+	c = getConfig(fields, b.Unindexed())
+	if c != nil {
+		return c
+	}
+	camelKey := util.ToCamelCase(b.ToString())
 	c = getConfig(fields, camelKey)
 	if c != nil {
 		return c
 	}
 	return defaultValue
+}
+
+func buildIndexedKey(fieldBreadCrumb BreadCrumb) string {
+	keyParts := strings.Split(fieldBreadCrumb.Unindexed(), ".")
+	iz := fieldBreadCrumb.GetIndividualizer()
+	var outParts []string
+	for i := 0; i < len(keyParts); i++ {
+		i2 := iz % 10
+		if i > 0 {
+			i2 = iz / (10 * i)
+		}
+		lastDigit := i2 % 10
+		iPart := len(keyParts) - 1 - i
+		part := keyParts[iPart]
+		if lastDigit > 0 {
+			part = fmt.Sprintf("%s#%d", keyParts[iPart], lastDigit)
+		}
+		outParts = append([]string{part}, outParts...)
+	}
+	return strings.Join(outParts, ".")
 }
 
 func getConfig(fields map[string]interface{}, fieldBreadcrumb string) interface{} {
