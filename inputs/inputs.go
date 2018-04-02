@@ -65,9 +65,6 @@ func (c *inputs) GetFieldInstruction(fieldBreadcrumb BreadCrumb, instructionKey 
 func getFieldConfig(fields map[string]interface{}, b BreadCrumb, defaultValue interface{}) interface{} {
 
 	indexed := buildIndexedKey(b)
-
-	fmt.Printf("Trying %s\n", indexed)
-
 	c := getConfig(fields, indexed)
 	if c != nil {
 		return c
@@ -76,7 +73,7 @@ func getFieldConfig(fields map[string]interface{}, b BreadCrumb, defaultValue in
 	if c != nil {
 		return c
 	}
-	camelKey := util.ToCamelCase(b.ToString())
+	camelKey := util.ToCamelCase(b.Unindexed())
 	c = getConfig(fields, camelKey)
 	if c != nil {
 		return c

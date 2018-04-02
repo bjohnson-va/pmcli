@@ -5,12 +5,13 @@ import (
 	"github.com/magiconair/properties/assert"
 	"github.com/bjohnson-va/pmcli/config"
 	"github.com/emicklei/proto"
+	"github.com/bjohnson-va/pmcli/inputs"
 )
 
 func TestParsesLegacyFormatOverrideFromFile(t *testing.T) {
 	// RPCs uses to be formatted Like.This, now they're formatted Like/This
 	c, _ := config.ReadFile("./test_data/override_legacy.json")
-	breadcrumb := "a.field"
+	breadcrumb := inputs.InitialBreadCrumb().AndField("a").AndField("Field")
 	service := proto.Service{
 		Name: "AnyService",
 	}
@@ -24,15 +25,15 @@ func TestParsesLegacyFormatOverrideFromFile(t *testing.T) {
 
 func TestParsesKnownGoodOverrideFromFile(t *testing.T) {
 	c, _ := config.ReadFile("./test_data/override.json")
-	breadcrumb := "a.field"
+	breadcrumb := inputs.InitialBreadCrumb().AndField("a").AndField("field")
 	service := proto.Service{
 		Name: "AnyService",
 	}
 	rpc := proto.RPC{
 		Name: "SomeRPC",
 	}
-	inputs, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
-	override := inputs.GetFieldOverride(breadcrumb, nil)
+	is, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
+	override := is.GetFieldOverride(breadcrumb, nil)
 	assert.Equal(t, override, "value specified in file")
 }
 
@@ -44,8 +45,9 @@ func TestParsesOverrideForFieldGivenInSnakeCase(t *testing.T) {
 	rpc := proto.RPC{
 		Name: "SomeRPC",
 	}
-	inputs, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
-	override := inputs.GetFieldOverride("a.longer_field", nil)
+	is, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
+	breadcrumb := inputs.InitialBreadCrumb().AndField("a").AndField("longer_field")
+	override := is.GetFieldOverride(breadcrumb, nil)
 	assert.Equal(t, override, "value specified in file")
 }
 
@@ -57,8 +59,9 @@ func TestParsesOverrideForFieldGivenInCamelCase(t *testing.T) {
 	rpc := proto.RPC{
 		Name: "SomeRPC",
 	}
-	inputs, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
-	override := inputs.GetFieldOverride("a.longer_field", nil)
+	is, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
+	breadcrumb := inputs.InitialBreadCrumb().AndField("a").AndField("longer_field")
+	override := is.GetFieldOverride(breadcrumb, nil)
 	assert.Equal(t, override, "value specified in file")
 }
 
@@ -83,8 +86,9 @@ func TestParsesKnownGoodFieldInstructionFromFile(t *testing.T) {
 	rpc := proto.RPC{
 		Name: "SomeRPC",
 	}
-	inputs, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
-	instruction := inputs.GetFieldInstruction("a.field", "an_instruction", nil)
+	is, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
+	breadcrumb := inputs.InitialBreadCrumb().AndField("a").AndField("field")
+	instruction := is.GetFieldInstruction(breadcrumb, "an_instruction", nil)
 	assert.Equal(t, instruction, "value specified in file")
 }
 
@@ -96,8 +100,9 @@ func TestParsesInstructionForFieldGivenInSnakeCase(t *testing.T) {
 	rpc := proto.RPC{
 		Name: "SomeRPC",
 	}
-	inputs, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
-	instruction := inputs.GetFieldInstruction("a.longer_field", "an_instruction", nil)
+	is, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
+	breadcrumb := inputs.InitialBreadCrumb().AndField("a").AndField("longer_field")
+	instruction := is.GetFieldInstruction(breadcrumb, "an_instruction", nil)
 	assert.Equal(t, instruction, "value specified in file")
 }
 
@@ -109,8 +114,9 @@ func TestParsesInstructionForFieldGivenInCamelCase(t *testing.T) {
 	rpc := proto.RPC{
 		Name: "SomeRPC",
 	}
-	inputs, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
-	instruction := inputs.GetFieldInstruction("a.longer_field", "an_instruction", nil)
+	ins, _ := config.GetInputsForRPC(service, rpc, c.ConfigMap)
+	breadcrumb := inputs.InitialBreadCrumb().AndField("a").AndField("longer_field")
+	instruction := ins.GetFieldInstruction(breadcrumb, "an_instruction", nil)
 	assert.Equal(t, instruction, "value specified in file")
 }
 
