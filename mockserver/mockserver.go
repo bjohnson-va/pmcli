@@ -71,17 +71,17 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (Server, erro
 	}
 	logging.Infof(ctx, "Ready to serve on port %d...", port)
 
-	insecureServer := &http.Server{
+	insecureSrv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
 		Handler: mux,
 	}
 	var httpSrv Server
-	httpSrv = insecureServer
+	httpSrv = insecureSrv
 
 	schema := "insecure HTTP"
 	if cfg.Https {
 		schema = "HTTPS"
-		httpSrv = AddCertsToServer(insecureServer, certs.WebserverCertificate, certs.WebserverPrivateKey)
+		httpSrv = AddCertsToServer(insecureSrv, cfg.Port, certs.Certificate, certs.PrivateKey)
 	}
 	logging.Infof(ctx, "Server will use %s (From %s in %s)", schema, config.UseHTTPSToken, config.FILENAME)
 

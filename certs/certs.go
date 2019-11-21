@@ -15,7 +15,7 @@ http://www.akadia.com/services/ssh_test_certificate.html
 
 */
 
-var WebserverCertificate = `-----BEGIN CERTIFICATE-----
+var Certificate = `-----BEGIN CERTIFICATE-----
 MIIDNTCCArygAwIBAgIJALlZ4nvuxhiVMAkGByqGSM49BAEwgYgxCzAJBgNVBAYT
 AkNBMRUwEwYDVQQIEwxTYXNrYXRjaGV3YW4xEjAQBgNVBAcTCVNhc2thdG9vbjER
 MA8GA1UEChMIVmVuZGFzdGExFTATBgNVBAMTDEJyYWQgSm9obnNvbjEkMCIGCSqG
@@ -36,7 +36,7 @@ Vl7uSh+wEwIwCv2CG2aCqo1IqVnidL1mfHO9FMIC4PS7lfQMd5aoytWZ8jBsfary
 FH7yrIOGO8FY
 -----END CERTIFICATE-----`
 
-var WebserverPrivateKey = `-----BEGIN EC PARAMETERS-----
+var PrivateKey = `-----BEGIN EC PARAMETERS-----
 BgUrgQQAIg==
 -----END EC PARAMETERS-----
 -----BEGIN EC PRIVATE KEY-----
