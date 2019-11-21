@@ -77,7 +77,7 @@ func promptForHttps(reader *bufio.Reader) bool {
 }
 
 func promptForAllowedOrigin(reader *bufio.Reader) string {
-	return "localhost:4000" // TODO: Prompt
+	return "null" // TODO: Prompt
 }
 
 func promptForProtoPath(reader *bufio.Reader) string {

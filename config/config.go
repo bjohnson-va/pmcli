@@ -191,7 +191,7 @@ func parseConfig(fileContents []byte) (*File, error) {
 
 	i, ok := data.(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("couldn't turn config into map: %s")
+		return nil, fmt.Errorf("couldn't turn config into map")
 	}
 
 	k := "protofiles"

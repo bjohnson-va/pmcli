@@ -160,17 +160,14 @@ func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadc
 		var value interface{}
 		if f.Repeated {
 			// json unmarshal defaults to float64
-			length := int(c.GetFieldInstruction(fBreadcrumb, "num", 1.0).(float64))
-			var list []interface{}
-			for x := 0; x < length; x++ {
-				z, err := randomFieldValue(ctx, *p, fBreadcrumb, x + 1, *f.Field, t, c)
-				if err != nil {
-					value = err.Error()
-					break
-				}
-				list = append(list, z)
+			override := c.GetFieldOverride(fBreadcrumb, nil)
+			if override != nil {
+				logging.Infof(ctx, "Using override for repeated field %s: %v", breadcrumb, override)
+				value = override
+			} else {
+				list := generateRandomRepeated(ctx, p, fBreadcrumb, f, t, c)
+				value = list
 			}
-			value = list
 		} else {
 			var err error
 			ni := individualizer * 10
@@ -182,6 +179,19 @@ func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadc
 		obj[util.ToCamelCase(f.Name)] = value
 	}
 	return obj
+}
+
+func generateRandomRepeated(ctx context.Context, p *random.FieldProvider, fBreadcrumb string, f proto.NormalField, t *parse.FieldTypes, c *config.Inputs) interface{} {
+	length := int(c.GetFieldInstruction(fBreadcrumb, "num", 1.0).(float64))
+	var list []interface{}
+	for x := 0; x < length; x++ {
+		z, err := randomFieldValue(ctx, *p, fBreadcrumb, x+1, *f.Field, t, c)
+		if err != nil {
+			return err.Error()
+		}
+		list = append(list, z)
+	}
+	return list
 }
 
 
