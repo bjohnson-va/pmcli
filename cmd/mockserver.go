@@ -12,6 +12,7 @@ var (
 	mockServerSource string
 	mockServerConfigFile string
 	mockServerRandomValueSource string
+	mockServerUseHttps bool
 
 	mockServerCmd = &cobra.Command{
 		Use:   "serve",
@@ -28,7 +29,7 @@ func init() {
 		"Sets the port of the mocked server")
 
 	mockServerCmd.Flags().StringVarP(&mockServerAllowedOrigin, "allowedOrigin", "b",
-		"http://localhost:4200",
+		"null",
 		"The origin from which requests will be made to this server")
 
 	goPath := os.Getenv("GOPATH")

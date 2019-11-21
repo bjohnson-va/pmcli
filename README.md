@@ -1,5 +1,8 @@
 # Proto Mock Command Line Interface
 
+### See Also
+- [How to contribute to this CLI](./DEVELOPMENT.md)
+
 *pmcli* provides mocking utilities based on protofiles
 
 ## Usage

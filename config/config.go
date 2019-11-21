@@ -1,13 +1,16 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/emicklei/proto"
-	"os"
-	"io/ioutil"
-	"encoding/json"
 	"github.com/vendasta/gosdks/util"
+	"io/ioutil"
+	"os"
 )
+
+const FILENAME = "mockserver.json"
+const UseHTTPSToken = "useHttps"
 
 type Inputs struct {
 	RPCName        string
@@ -161,6 +164,7 @@ type File struct {
 	ProtofileNames []string
 	AllowedOrigin  string
 	Port           int64
+	Https          bool
 }
 
 func ReadFile(filename string) (*File, error) {
@@ -209,11 +213,16 @@ func parseConfig(fileContents []byte) (*File, error) {
 	if ok {
 		port = int64(pf)
 	}
+	https, ok := i[UseHTTPSToken].(bool)
+	if !ok {
+		https = true
+	}
 
 	return &File{
 		ConfigMap:      i,
 		ProtofileNames: protofiles,
 		AllowedOrigin:  allowedOrigin,
 		Port:           port,
+		Https:       https,
 	}, nil
 }

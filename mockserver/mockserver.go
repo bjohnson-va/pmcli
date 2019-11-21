@@ -3,13 +3,14 @@ package mockserver
 import (
 	"context"
 	"fmt"
-	"net/http"
+	"github.com/bjohnson-va/pmcli/certs"
 	"github.com/bjohnson-va/pmcli/config"
 	"github.com/bjohnson-va/pmcli/handlers"
+	"github.com/bjohnson-va/pmcli/random"
 	"github.com/fsnotify/fsnotify"
 	"github.com/vendasta/gosdks/logging"
+	"net/http"
 	"os"
-	"github.com/bjohnson-va/pmcli/random"
 )
 
 // TODO: Helper for generating initial config file
@@ -41,7 +42,6 @@ type serverDetails struct {
 }
 
 func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d serverDetails) error {
-
 	srv, err := prepareServerFromConfig(ctx, d)
 	if err != nil {
 		return fmt.Errorf("problem preparing server: %s", err.Error())
@@ -59,7 +59,7 @@ func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d s
 	return nil
 }
 
-func prepareServerFromConfig(ctx context.Context, d serverDetails) (*http.Server, error) {
+func prepareServerFromConfig(ctx context.Context, d serverDetails) (Server, error) {
 	cfg, err := config.ReadFile(d.configFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading config [%s]: %s", d.configFilePath, err.Error())
@@ -69,11 +69,22 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (*http.Server
 	if err != nil {
 		return nil, fmt.Errorf("failed to build server mux: %s", err.Error())
 	}
-	httpSrv := &http.Server{
+	logging.Infof(ctx, "Ready to serve on port %d...", port)
+
+	insecureServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
 		Handler: mux,
 	}
-	logging.Infof(ctx, "Ready to serve on port %d...", port)
+	var httpSrv Server
+	httpSrv = insecureServer
+
+	schema := "insecure HTTP"
+	if cfg.Https {
+		schema = "HTTPS"
+		httpSrv = AddCertsToServer(insecureServer, certs.WebserverCertificate, certs.WebserverPrivateKey)
+	}
+	logging.Infof(ctx, "Server will use %s (From %s in %s)", schema, config.UseHTTPSToken, config.FILENAME)
+
 	return httpSrv, nil
 }
 
@@ -88,7 +99,7 @@ func determinePortNumber(d serverDetails, cfg *config.File) int64 {
 	return port
 }
 
-func startNewServerOnConfigFileChanges(ctx context.Context, srv *http.Server, d serverDetails) error {
+func startNewServerOnConfigFileChanges(ctx context.Context, srv Server, d serverDetails) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("unable to create new watcher: %s", err.Error())
@@ -155,6 +166,7 @@ func buildServerMux(ctx context.Context, d serverDetails, configs *config.File) 
 		AllConfig:         configs.ConfigMap,
 		RandomProvider:    &r,
 	}
+	logging.Infof(ctx, "Handlers will allow requests from origin: \"%s\"", ao)
 	for _, p := range configs.ProtofileNames {
 		h, err := handlers.FromProtofile(hbc, p)
 		if err != nil {
