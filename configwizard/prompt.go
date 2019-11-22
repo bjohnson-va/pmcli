@@ -9,6 +9,7 @@ import (
 	"github.com/vendasta/gosdks/logging"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -41,7 +42,7 @@ func Prompt(ctx context.Context, rootDir string) MockServerJson {
 	jsonData.AllowedOrigin = promptForAllowedOrigin(reader)
 	jsonData.Https = promptForHttps(reader, jsonData.Https)
 	jsonData.ProtoPaths = []string{promptForProtoPath(ctx, reader, rootDir, jsonData.ProtoPaths[0])}
-	jsonData.Overrides = map[string]interface{}{}
+	jsonData.Overrides = PromptForOverrides(ctx, filepath.Join(os.Getwd(), config.FILENAME))
 	jsonData.Instructions = map[string]interface{}{}
 	jsonData.Exclusions = map[string]interface{}{}
 	return jsonData
