@@ -38,54 +38,72 @@ type MockServerJson struct {
 
 func generate(cmd *cobra.Command, args []string) {
 	ctx := context.Background()
+	jsonData := MockServerJson{
+		MoreInfo:      "https://github.com/bjohnson-va/pmcli",
+	}
 	if _, err := os.Stat("./" + config.FILENAME); !os.IsNotExist(err) {
-		fmt.Println(config.FILENAME + " already exists. Please remove it before running the generator.")
-		return
+		d, err := ioutil.ReadFile("./" + config.FILENAME)
+		if err == nil {
+			err = json.Unmarshal(d, &jsonData)
+			if err != nil {
+				warnf("Could not parse existing %s.\n"+
+					"It will be overwritten [%s]\n", config.FILENAME, err.Error())
+			}
+		}
 	}
 	reader := bufio.NewReader(os.Stdin)
 
-	port := promptForPort(reader)
-	https := promptForHttps(reader)
-	allowedOrigin := promptForAllowedOrigin(reader)
-	protopath := promptForProtoPath(ctx, reader)
+	jsonData.Port = promptForPort(reader, jsonData.Port)
+	jsonData.AllowedOrigin = promptForAllowedOrigin(reader)
+	jsonData.Https = promptForHttps(reader, jsonData.Https)
+	jsonData.ProtoPaths = []string{promptForProtoPath(ctx, reader, jsonData.ProtoPaths[0])}
+	jsonData.Overrides = map[string]interface{}{}
+	jsonData.Instructions = map[string]interface{}{}
+	jsonData.Exclusions = map[string]interface{}{}
 
-	j, err := json.MarshalIndent(&MockServerJson{
-		MoreInfo:      "https://github.com/bjohnson-va/pmcli",
-		Port:          port,
-		AllowedOrigin: allowedOrigin,
-		Https:         https,
-		ProtoPaths:    []string{protopath},
-		Overrides:     map[string]interface{}{},
-		Instructions:  map[string]interface{}{},
-		Exclusions:    map[string]interface{}{},
-	}, "", "  ")
+	j, err := writeToFile(jsonData)
 	if err != nil {
-		logging.Errorf(ctx, "Error marshalling %s: %s", config.FILENAME, err.Error())
-		return
-	}
-	err = ioutil.WriteFile("./"+config.FILENAME, append(j, ([]byte)("\n")...), 0644)
-	if err != nil {
-		logging.Errorf(ctx, "Error writing to %s: %s", config.FILENAME, err.Error())
+		logging.Errorf(ctx, "Failed to write server config file: %s", err.Error())
 		return
 	}
 	fmt.Printf("Successfully wrote to %s:\n%s\n", config.FILENAME, j)
 }
 
-func promptForPort(reader *bufio.Reader) int64 {
-	userValue := prompt(reader, "Enter the path for your API proto file", "28000")
+func writeToFile(o MockServerJson) ([]byte, error) {
+	j, err := json.MarshalIndent(&o, "", "  ")
+	if err != nil {
+		return nil, fmt.Errorf("Error marshalling %s: %s", config.FILENAME, err.Error())
+	}
+	err = ioutil.WriteFile("./"+config.FILENAME, append(j, ([]byte)("\n")...), 0644)
+	if err != nil {
+		return nil, fmt.Errorf("Error writing to %s: %s", config.FILENAME, err.Error())
+	}
+	return j, nil
+}
+
+func promptForPort(reader *bufio.Reader, current int64) int64 {
+	defaultPort := 28000
+	if current > 0 {
+		defaultPort = int(current)
+	}
+	userValue := prompt(reader, "Enter the path for your API proto file", strconv.Itoa(defaultPort))
 	atoi, err := strconv.Atoi(userValue)
 	if err != nil {
 		warnf("User input could not be understood [%s]\n", err.Error())
-		return promptForPort(reader)
+		return promptForPort(reader, current)
 	}
 	return int64(atoi)
 }
 
-func promptForHttps(reader *bufio.Reader) bool {
-	userSelection := strings.ToLower(prompt(reader, "Use HTTPS? (y/n)", "y"))
+func promptForHttps(reader *bufio.Reader, current bool) bool {
+	defaultVal := "n"
+	if current {
+		defaultVal = "y"
+	}
+	userSelection := strings.ToLower(prompt(reader, "Use HTTPS? (y/n)", defaultVal))
 	if userSelection != "y" && userSelection != "n" {
 		warnf("User input could not be understood [%s]\n", userSelection)
-		promptForHttps(reader)
+		promptForHttps(reader, current)
 	}
 	return userSelection == "y"
 }
@@ -94,10 +112,13 @@ func promptForAllowedOrigin(reader *bufio.Reader) string {
 	return "null" // TODO: Prompt
 }
 
-func promptForProtoPath(ctx context.Context, reader *bufio.Reader) string {
+func promptForProtoPath(ctx context.Context, reader *bufio.Reader, current string) string {
 	// TODO: Stop assuming these will be in "$GOPATH/src/github.com/vendasta/vendastaapis"
 	warnf("PMCLI will use %s as the root directory for protofiles\n", mockServerSource)
-	defaultValue := getDefaultProtoPath(ctx)
+	defaultValue := current
+	if current == "" {
+		defaultValue = getDefaultProtoPath(ctx)
+	}
 	return prompt(reader, "Enter the path for your API proto file", defaultValue)
 }
 
