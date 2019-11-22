@@ -162,7 +162,7 @@ func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadc
 			// json unmarshal defaults to float64
 			override := c.GetFieldOverride(fBreadcrumb, nil)
 			if override != nil {
-				logging.Infof(ctx, "Using override for repeated field %s: %v", breadcrumb, override)
+				logging.Infof(ctx, "Using override for repeated field %s: %v", fBreadcrumb, override)
 				value = override
 			} else {
 				list := generateRandomRepeated(ctx, p, fBreadcrumb, f, t, c)

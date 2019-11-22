@@ -9,6 +9,7 @@ import (
 	"github.com/vendasta/gosdks/logging"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -46,7 +47,7 @@ func generate(cmd *cobra.Command, args []string) {
 	port := promptForPort(reader)
 	https := promptForHttps(reader)
 	allowedOrigin := promptForAllowedOrigin(reader)
-	protopath := promptForProtoPath(reader)
+	protopath := promptForProtoPath(ctx, reader)
 
 	j, err := json.MarshalIndent(&MockServerJson{
 		MoreInfo:      "https://github.com/bjohnson-va/pmcli",
@@ -71,23 +72,61 @@ func generate(cmd *cobra.Command, args []string) {
 }
 
 func promptForPort(reader *bufio.Reader) int64 {
-	return 28000 // TODO: Prompt
+	userValue := prompt(reader, "Enter the path for your API proto file", "28000")
+	atoi, err := strconv.Atoi(userValue)
+	if err != nil {
+		warnf("User input could not be understood [%s]\n", err.Error())
+		return promptForPort(reader)
+	}
+	return int64(atoi)
 }
 
 func promptForHttps(reader *bufio.Reader) bool {
-	return true // TODO: Prompt
+	userSelection := strings.ToLower(prompt(reader, "Use HTTPS? (y/n)", "y"))
+	if userSelection != "y" && userSelection != "n" {
+		warnf("User input could not be understood [%s]\n", userSelection)
+		promptForHttps(reader)
+	}
+	return userSelection == "y"
 }
 
 func promptForAllowedOrigin(reader *bufio.Reader) string {
 	return "null" // TODO: Prompt
 }
 
-func promptForProtoPath(reader *bufio.Reader) string {
-	fmt.Printf("Enter the path for your API proto file (relative to %s): ", mockServerSource)
+func promptForProtoPath(ctx context.Context, reader *bufio.Reader) string {
+	// TODO: Stop assuming these will be in "$GOPATH/src/github.com/vendasta/vendastaapis"
+	warnf("PMCLI will use %s as the root directory for protofiles\n", mockServerSource)
+	defaultValue := getDefaultProtoPath(ctx)
+	return prompt(reader, "Enter the path for your API proto file", defaultValue)
+}
+
+func getDefaultProtoPath(ctx context.Context) string {
+	wd, err := os.Getwd()
+	if err != nil {
+		logging.Warningf(ctx, "Failed to guess protofile.  User will have to choose. (%s)", err.Error())
+		return ""
+	}
+	parts := strings.Split(wd, string(os.PathSeparator))
+	return fmt.Sprintf("%s/v1/api.proto", parts[len(parts)-1])
+}
+
+func prompt(reader *bufio.Reader, promptMsg string, defaultValue string) string {
+	msg := promptMsg
+	if defaultValue != "" {
+		msg = fmt.Sprintf("%s [default %s]", msg, defaultValue)
+	}
+	fmt.Printf("%s: ", msg)
 	text, _ := reader.ReadString('\n')
 	text = strings.TrimSpace(text)
-	// TODO: Stop assuming these will be in "$GOPATH/src/github.com/vendasta/vendastaapis"
+	if text == "" {
+		return defaultValue
+	}
 	return text
+}
+
+func warnf(message string, args ...interface{}) {
+	fmt.Printf("\033[1;36m%s\033[0m", fmt.Sprintf(message, args...))
 }
 
 func init() {
