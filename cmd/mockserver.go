@@ -12,7 +12,6 @@ var (
 	mockServerSource string
 	mockServerConfigFile string
 	mockServerRandomValueSource string
-	mockServerUseHttps bool
 
 	mockServerCmd = &cobra.Command{
 		Use:   "serve",
