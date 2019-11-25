@@ -1,6 +1,7 @@
 # Proto Mock Command Line Interface
 
 ### See Also
+- [Using with Angular Apps](./README.ANGULAR.md)
 - [How to contribute to this CLI](./DEVELOPMENT.md)
 
 *pmcli* provides mocking utilities based on protofiles
