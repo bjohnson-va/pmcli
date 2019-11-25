@@ -25,6 +25,7 @@ var generateCmd = &cobra.Command{
 }
 
 type MockServerJson struct {
+	MoreInfo      string                 `json:"moreInfo"`
 	Port          int64                  `json:"port"`
 	AllowedOrigin string                 `json:"allowedOrigin"`
 	Https         bool                   `json:"useHttps"`
@@ -48,6 +49,7 @@ func generate(cmd *cobra.Command, args []string) {
 	protopath := promptForProtoPath(reader)
 
 	j, err := json.MarshalIndent(&MockServerJson{
+		MoreInfo:      "https://github.com/bjohnson-va/pmcli",
 		Port:          port,
 		AllowedOrigin: allowedOrigin,
 		Https:         https,
