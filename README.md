@@ -13,7 +13,11 @@ pmcli serve
 
 ### Requirements
 Before you can run `pmcli serve`, you should set up a minimal configuration 
-file called mockserver.json.  Put this file in the directory from which you 
+file called mockserver.json.  
+
+**This file can be minimally generated using `pmcli generate`.**
+
+Put this file in the directory from which you 
 will be running *pmcli*.  This will typically be the root directory of the
 project you will be a running a mockserver *in place of*.
 
