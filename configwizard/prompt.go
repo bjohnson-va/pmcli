@@ -14,6 +14,7 @@ import (
 )
 
 type MockServerJson struct {
+	MoreInfo      string                 `json:"moreInfo"`
 	Port          int64                  `json:"port"`
 	AllowedOrigin string                 `json:"allowedOrigin"`
 	Https         bool                   `json:"useHttps"`
@@ -24,7 +25,9 @@ type MockServerJson struct {
 }
 
 func Prompt(ctx context.Context, rootDir string) MockServerJson {
-	jsonData := MockServerJson{}
+	jsonData := MockServerJson{
+		MoreInfo:      "https://github.com/bjohnson-va/pmcli",
+	}
 	if _, err := os.Stat("./" + config.FILENAME); !os.IsNotExist(err) {
 		d, err := ioutil.ReadFile("./" + config.FILENAME)
 		if err == nil {
