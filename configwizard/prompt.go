@@ -9,7 +9,6 @@ import (
 	"github.com/vendasta/gosdks/logging"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -38,11 +37,20 @@ func Prompt(ctx context.Context, rootDir string) MockServerJson {
 	}
 	reader := bufio.NewReader(os.Stdin)
 
+	safeGet := func(slice []string, index int, defaultVal string) string {
+		if len(slice) > index + 1 {
+			return slice[index]
+		}
+		return defaultVal
+	}
+
 	jsonData.Port = promptForPort(reader, jsonData.Port)
 	jsonData.AllowedOrigin = promptForAllowedOrigin(reader)
 	jsonData.Https = promptForHttps(reader, jsonData.Https)
-	jsonData.ProtoPaths = []string{promptForProtoPath(ctx, reader, rootDir, jsonData.ProtoPaths[0])}
-	jsonData.Overrides = PromptForOverrides(ctx, filepath.Join(os.Getwd(), config.FILENAME))
+	jsonData.ProtoPaths = []string{promptForProtoPath(ctx, reader, rootDir, safeGet(jsonData.ProtoPaths, 0, ""))}
+	jsonData.Overrides = map[string]interface{}{}
+	// TODO: Uncomment
+	//jsonData.Overrides = PromptForOverrides(ctx, filepath.Join(os.Getwd(), config.FILENAME))
 	jsonData.Instructions = map[string]interface{}{}
 	jsonData.Exclusions = map[string]interface{}{}
 	return jsonData
@@ -53,7 +61,7 @@ func promptForPort(reader *bufio.Reader, current int64) int64 {
 	if current > 0 {
 		defaultPort = int(current)
 	}
-	userValue := prompt(reader, "Enter the path for your API proto file", strconv.Itoa(defaultPort))
+	userValue := prompt(reader, "Choose a port for the server", strconv.Itoa(defaultPort))
 	atoi, err := strconv.Atoi(userValue)
 	if err != nil {
 		warnf("User input could not be understood [%s]\n", err.Error())
@@ -96,7 +104,9 @@ func getDefaultProtoPath(ctx context.Context) string {
 		return ""
 	}
 	parts := strings.Split(wd, string(os.PathSeparator))
-	return fmt.Sprintf("%s/v1/api.proto", parts[len(parts)-1])
+	name := parts[len(parts)-1]
+	name = strings.Replace(name, "-", "_", 1)
+	return fmt.Sprintf("%s/v1/api.proto", name)
 }
 
 func prompt(reader *bufio.Reader, promptMsg string, defaultValue string) string {
