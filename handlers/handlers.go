@@ -1,19 +1,19 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bjohnson-va/pmcli/config"
+	"github.com/bjohnson-va/pmcli/parse"
+	"github.com/bjohnson-va/pmcli/protofiles"
+	"github.com/bjohnson-va/pmcli/random"
+	"github.com/emicklei/proto"
+	"github.com/vendasta/gosdks/logging"
+	"github.com/vendasta/gosdks/util"
 	"net/http"
 	"strings"
-	"github.com/emicklei/proto"
-	"github.com/bjohnson-va/pmcli/protofiles"
-	"github.com/bjohnson-va/pmcli/parse"
-	"github.com/bjohnson-va/pmcli/config"
-	"github.com/vendasta/gosdks/util"
-	"context"
-	"github.com/vendasta/gosdks/logging"
 	"time"
-	"github.com/bjohnson-va/pmcli/random"
 )
 
 type HTTPHandler struct {
@@ -22,10 +22,10 @@ type HTTPHandler struct {
 }
 
 type HandlerBuildingConfig struct {
-	AllowedOrigin string
+	AllowedOrigin     string
 	ProtofileRootPath string
-	AllConfig map[string]interface{}
-	RandomProvider *random.FieldProvider
+	AllConfig         map[string]interface{}
+	RandomProvider    *random.FieldProvider
 }
 
 func FromProtofile(c HandlerBuildingConfig, protofileName string) ([]HTTPHandler, error) {
@@ -68,9 +68,6 @@ func buildHandlersForServices(hbc HandlerBuildingConfig, services []proto.Servic
 	return handlers, nil
 }
 
-
-
-
 func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.FieldTypes, p *random.FieldProvider, c *config.Inputs) HTTPHandler {
 	ctx := context.Background() // New Handler -> new Context
 	// json unmarshal defaults to float64
@@ -100,8 +97,8 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 	foundMessage := (*proto.Message)(nil)
 	for _, m := range t.Messages {
 		if m.Name == rpc.ReturnsType {
-			foundMessage = &m;
-			break;
+			foundMessage = &m
+			break
 		}
 	}
 	if foundMessage == nil {
@@ -122,7 +119,7 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 
 		delay(ctx, delaySeconds)
 		obj := GenerateRandomFieldsForMessage(ctx, p, *foundMessage, t, c)
-		marshaled, _ := json.Marshal(obj)
+		marshaled, _ := json.MarshalIndent(obj, "", "    ")
 		w.Write(([]byte)(marshaled))
 	}
 	return HTTPHandler{
@@ -155,7 +152,7 @@ func randomFieldsForMessage(ctx context.Context, p *random.FieldProvider, breadc
 		}
 		if c.GetFieldExclusion(fBreadcrumb) {
 			logging.Debugf(ctx, "%s is excluded via config file", fBreadcrumb)
-			continue;
+			continue
 		}
 		var value interface{}
 		if f.Repeated {
@@ -194,7 +191,6 @@ func generateRandomRepeated(ctx context.Context, p *random.FieldProvider, fBread
 	return list
 }
 
-
 func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb string, individualizer int, field proto.Field, t *parse.FieldTypes, c *config.Inputs) (interface{}, error) {
 	override := c.GetFieldOverride(breadcrumb, nil)
 	if override != nil {
@@ -227,7 +223,7 @@ func randomFieldValue(ctx context.Context, p random.FieldProvider, breadcrumb st
 		// Probably an enum.  Eg: CampaignStatus.Status
 		parts := strings.Split(field.Type, ".")
 		fieldType = parts[0]
-		isEnum = true;
+		isEnum = true
 	}
 
 	for _, e := range t.Enums {
