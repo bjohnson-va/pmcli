@@ -26,7 +26,7 @@ type MockServerJson struct {
 
 func Prompt(ctx context.Context, rootDir string) MockServerJson {
 	jsonData := MockServerJson{
-		MoreInfo:      "https://github.com/bjohnson-va/pmcli",
+		MoreInfo: "https://github.com/bjohnson-va/pmcli",
 	}
 	if _, err := os.Stat("./" + config.FILENAME); !os.IsNotExist(err) {
 		d, err := ioutil.ReadFile("./" + config.FILENAME)
@@ -41,7 +41,7 @@ func Prompt(ctx context.Context, rootDir string) MockServerJson {
 	reader := bufio.NewReader(os.Stdin)
 
 	safeGet := func(slice []string, index int, defaultVal string) string {
-		if len(slice) > index + 1 {
+		if len(slice) > index+1 {
 			return slice[index]
 		}
 		return defaultVal
@@ -91,8 +91,14 @@ func promptForAllowedOrigin(reader *bufio.Reader) string {
 }
 
 func promptForProtoPath(ctx context.Context, reader *bufio.Reader, rootDir string, current string) string {
-	// TODO: Stop assuming these will be in "$GOPATH/src/github.com/vendasta/vendastaapis"
-	warnf("PMCLI will use %s as the root directory for protofiles\n", rootDir)
+	rootOverride := os.Getenv("PMCLI_ROOT")
+	rootMsg := "PMCLI will use %s as the root directory for protofiles\n"
+	if rootOverride == "" {
+		warnf(rootMsg, rootDir)
+		fmt.Printf("You can set the PMCLI_ROOT env variable to override this")
+	} else {
+		fmt.Printf(rootMsg, rootOverride)
+	}
 	defaultValue := current
 	if current == "" {
 		defaultValue = getDefaultProtoPath(ctx)

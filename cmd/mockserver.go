@@ -1,16 +1,17 @@
 package cmd
 
 import (
+	"github.com/bjohnson-va/pmcli/mockserver"
 	"github.com/spf13/cobra"
 	"os"
-	"github.com/bjohnson-va/pmcli/mockserver"
+	"strings"
 )
 
 var (
-	mockServerPort int64
-	mockServerAllowedOrigin string
-	mockServerSource string
-	mockServerConfigFile string
+	mockServerPort              int64
+	mockServerAllowedOrigin     string
+	mockServerSource            string
+	mockServerConfigFile        string
 	mockServerRandomValueSource string
 
 	mockServerCmd = &cobra.Command{
@@ -19,7 +20,6 @@ var (
 		Long:  `Build a mock server from a proto specification in vendastaapis`,
 		RunE:  runMockServer,
 	}
-
 )
 
 func init() {
@@ -31,9 +31,9 @@ func init() {
 		"null",
 		"The origin from which requests will be made to this server")
 
-	goPath := os.Getenv("GOPATH")
+	protoRootDir := getProtoRootDirectory()
 	mockServerCmd.Flags().StringVarP(&mockServerSource, "source", "s",
-		goPath+ "/src/github.com/vendasta/vendastaapis",
+		protoRootDir,
 		"Directory containing source proto files")
 
 	mockServerCmd.Flags().StringVarP(&mockServerConfigFile, "config", "c",
@@ -45,6 +45,16 @@ func init() {
 		"Randomization seed: Choose one of [breadcrumb, time]")
 
 	RootCmd.AddCommand(mockServerCmd)
+}
+
+func getProtoRootDirectory() string {
+	goPath := os.Getenv("GOPATH")
+	rootOverride := os.Getenv("PMCLI_ROOT")
+	protoRootDir := strings.TrimRight(rootOverride, "/")
+	if protoRootDir == "" {
+		protoRootDir = goPath + "/src/github.com/vendasta/vendastaapis"
+	}
+	return protoRootDir
 }
 
 func runMockServer(cmd *cobra.Command, args []string) error {

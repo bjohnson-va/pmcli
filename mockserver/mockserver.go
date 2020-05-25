@@ -1,6 +1,7 @@
 package mockserver
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"github.com/bjohnson-va/pmcli/certs"
@@ -24,7 +25,7 @@ func BuildAndRun(mockServerPort int64, allowedOrigin string,
 		allowedOrigin:  allowedOrigin,
 		rootDir:        rootDir,
 		configFilePath: configFile,
-		randomSeed: randomSeed,
+		randomSeed:     randomSeed,
 	}
 	err := runServerInBackgroundAndRestartOnConfigFileChanges(ctx, d)
 	if err != nil {
@@ -69,7 +70,11 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (Server, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to build server mux: %s", err.Error())
 	}
-	logging.Infof(ctx, "Ready to serve on port %d...", port)
+	s := "http"
+	if cfg.Https {
+		s = "https"
+	}
+	logging.Infof(ctx, "Ready to serve on %s://localhost:%d...", s, port)
 
 	insecureSrv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
@@ -167,6 +172,9 @@ func buildServerMux(ctx context.Context, d serverDetails, configs *config.File) 
 		RandomProvider:    &r,
 	}
 	logging.Infof(ctx, "Handlers will allow requests from origin: \"%s\"", ao)
+
+	var mockedPaths []string
+
 	for _, p := range configs.ProtofileNames {
 		h, err := handlers.FromProtofile(hbc, p)
 		if err != nil {
@@ -176,9 +184,37 @@ func buildServerMux(ctx context.Context, d serverDetails, configs *config.File) 
 		for _, handler := range h {
 			logging.Infof(ctx, "Created handler: %s\n", handler.Path)
 			mux.HandleFunc(handler.Path, handler.HandlerFunc)
+			mockedPaths = append(mockedPaths, handler.Path)
 		}
 	}
+
+	buildRootHandler(ctx, mux, mockedPaths)
+
 	return mux, nil
+}
+
+func buildRootHandler(ctx context.Context, mux *http.ServeMux, mockedPaths []string) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		bw := bufio.NewWriter(w)
+		_, err := bw.WriteString("<html><body>This is a mock server. The following RPCs are available:")
+		if err != nil {
+			logging.Errorf(ctx, "Failed to write to response: %s", err.Error())
+		}
+		for _, p := range mockedPaths {
+			_, err := bw.WriteString(fmt.Sprintf(`<p><a href="%s">%s</a><p>`, p, p))
+			if err != nil {
+				logging.Errorf(ctx, "Failed to write path to response: %s", err.Error())
+			}
+		}
+		_, err = bw.WriteString("</body></html>")
+		if err != nil {
+			logging.Errorf(ctx, "Failed to write to response: %s", err.Error())
+		}
+		err = bw.Flush()
+		if err != nil {
+			logging.Errorf(ctx, "Failed to flush writer", err.Error())
+		}
+	})
 }
 
 func initializeRandomProvider(ctx context.Context, randomSeed string) random.FieldProvider {

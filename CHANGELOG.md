@@ -1,3 +1,6 @@
+3.2.0
+- Adds support for custom proto root via the PMCLI_ROOT environment variable
+
 1.5.2
 - Correction to debug log
 
