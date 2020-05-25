@@ -1,8 +1,0 @@
-title AccessControl
-
-Client->IAM: AccessResource: Does subject "S-123" have access to resource id "AccountGroup" with identifiers "AccountGroupID: AG-123, PartnerID: ABC" for scope "Read"?
-note right of IAM: Look up policies for resource "AccountGroup". Filter policies by scope "Read". Policy "CanRead" found.
-IAM->ResourceOwner: GetResourceRequest: Give me resource of type "AccountGroup" with identifiers "AccountGroupID: AG-123, PartnerID: ABC"
-ResourceOwner-->IAM: GetResourceResponse: Ok. "AccountGroupID: AG-123, PartnerID: ABC, MarketID: west"
-note right of IAM: Evaluate policy "CanRead" with subject "S-123" and Resource attributes from GetResourceResponse.
-IAM-->Client: google.protobuf.Empty (An error code will signify access denied, a success will signify access granted)

@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package vstorepb;
-
-message GeoPoint {
-    double latitude = 1;
-    double longitude = 2;
-}
