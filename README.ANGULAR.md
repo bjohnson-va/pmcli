@@ -22,6 +22,19 @@ directed to localhost
 
 ## Common Errors
 
+### Chrome
+
+Unfortunately, if you are trying to make XMLHttpRequests using the `withCredentials`
+option, Chrome will block you.  There doesn't seem to be any way around this.
+
+To use pmcli in Chrome, for calling localhost->localhost with the `withCredentials`
+(otherwise known as `credentials: include`) option, you will have to start an
+insecure Chrome session.
+
+```
+chromium --disable-web-security  --user-data-dir=~/chromeTemp
+```
+
 ### status: 0
 ```
 ERROR HttpErrorResponse {headers: HttpHeaders, status: 0, statusText: "Unknown Error", url: "https://partners.mydomain.co/something/GetSomething", ok: false, …}
