@@ -4,20 +4,24 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/vendasta/gosdks/logging"
+
 	"github.com/bjohnson-va/pmcli/certs"
 	"github.com/bjohnson-va/pmcli/config"
 	"github.com/bjohnson-va/pmcli/handlers"
 	"github.com/bjohnson-va/pmcli/random"
-	"github.com/fsnotify/fsnotify"
-	"github.com/vendasta/gosdks/logging"
-	"net/http"
-	"os"
 )
 
 // TODO: Helper for generating initial config file
 
-func BuildAndRun(mockServerPort int64, allowedOrigin string,
-	rootDir string, configFile string, randomSeed string) error {
+func BuildAndRun(
+	mockServerPort int64, allowedOrigin string, rootDir string,
+	configFile string, randomSeed string, assist config.AssistEnum,
+) error {
 	ctx := context.Background()
 
 	d := serverDetails{
@@ -26,6 +30,7 @@ func BuildAndRun(mockServerPort int64, allowedOrigin string,
 		rootDir:        rootDir,
 		configFilePath: configFile,
 		randomSeed:     randomSeed,
+		assist:         assist,
 	}
 	err := runServerInBackgroundAndRestartOnConfigFileChanges(ctx, d)
 	if err != nil {
@@ -40,6 +45,7 @@ type serverDetails struct {
 	rootDir        string
 	configFilePath string
 	randomSeed     string
+	assist         config.AssistEnum
 }
 
 func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d serverDetails) error {
@@ -48,7 +54,7 @@ func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d s
 		return fmt.Errorf("problem preparing server: %s", err.Error())
 	}
 	go func() {
-		err := srv.ListenAndServe()
+		err := srv.ListenAndServe(ctx)
 		if err != nil {
 			logging.Errorf(ctx, "Error on ListenAndServe: %s", err.Error())
 		}
@@ -65,20 +71,10 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (Server, erro
 	if err != nil {
 		return nil, fmt.Errorf("error reading config [%s]: %s", d.configFilePath, err.Error())
 	}
-	port := determinePortNumber(d, cfg)
-	mux, err := buildServerMux(ctx, d, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build server mux: %s", err.Error())
-	}
-	s := "http"
-	if cfg.Https {
-		s = "https"
-	}
-	logging.Infof(ctx, "Ready to serve on %s://localhost:%d...", s, port)
 
-	insecureSrv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
+	insecureSrv, err := NewInsecureServer(ctx, d, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct base server: %s", err.Error())
 	}
 	var httpSrv Server
 	httpSrv = insecureSrv
@@ -89,6 +85,8 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (Server, erro
 		httpSrv = AddCertsToServer(insecureSrv, cfg.Port, certs.Certificate, certs.PrivateKey)
 	}
 	logging.Infof(ctx, "Server will use %s (From %s in %s)", schema, config.UseHTTPSToken, config.FILENAME)
+
+	httpSrv.SetAssists(d.assist)
 
 	return httpSrv, nil
 }

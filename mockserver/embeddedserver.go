@@ -5,10 +5,11 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
-	"net/http"
+
+	"github.com/bjohnson-va/pmcli/config"
 )
 
-func AddCertsToServer(server *http.Server, port int64, cert string, key string) Server {
+func AddCertsToServer(server *InsecureServer, port int64, cert string, key string) Server {
 	return &embeddedServer{
 		server:               server,
 		port:                 port,
@@ -18,31 +19,35 @@ func AddCertsToServer(server *http.Server, port int64, cert string, key string) 
 }
 
 type embeddedServer struct {
-	server               *http.Server
+	server               *InsecureServer
 	port                 int64
 	webserverCertificate string
 	webserverKey         string
+}
+
+func (srv *embeddedServer) SetAssists(a config.AssistEnum) {
+	srv.server.SetAssists(a)
 }
 
 func (srv *embeddedServer) Shutdown(ctx context.Context) error {
 	return srv.server.Shutdown(ctx)
 }
 
-func (srv *embeddedServer) ListenAndServe() error {
+func (srv *embeddedServer) ListenAndServe(ctx context.Context) error {
 
-	config := &tls.Config{
+	cfg := &tls.Config{
 		MinVersion: tls.VersionTLS10,
 	}
-	if srv.server.TLSConfig != nil {
-		*config = *srv.server.TLSConfig
+	if srv.server.GetTLSConfig() != nil {
+		*cfg = *srv.server.GetTLSConfig()
 	}
-	if config.NextProtos == nil {
-		config.NextProtos = []string{"http/1.1"}
+	if cfg.NextProtos == nil {
+		cfg.NextProtos = []string{"http/1.1"}
 	}
 
 	var err error
-	config.Certificates = make([]tls.Certificate, 1)
-	config.Certificates[0], err = tls.X509KeyPair([]byte(srv.webserverCertificate), []byte(srv.webserverKey))
+	cfg.Certificates = make([]tls.Certificate, 1)
+	cfg.Certificates[0], err = tls.X509KeyPair([]byte(srv.webserverCertificate), []byte(srv.webserverKey))
 	if err != nil {
 		return fmt.Errorf("failed creating cert pair: %s", err.Error())
 	}
@@ -52,8 +57,8 @@ func (srv *embeddedServer) ListenAndServe() error {
 		return fmt.Errorf("failed listening to TCP: %s", err.Error())
 	}
 
-	tlsListener := tls.NewListener(conn, config)
-	err = srv.server.Serve(tlsListener)
+	tlsListener := tls.NewListener(conn, cfg)
+	err = srv.server.Serve(ctx, tlsListener)
 	if err != nil {
 		return fmt.Errorf("failed to serve: %s", err.Error())
 	}

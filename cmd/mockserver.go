@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/bjohnson-va/pmcli/config"
 	"github.com/bjohnson-va/pmcli/mockserver"
 	"github.com/spf13/cobra"
 	"os"
@@ -16,9 +17,16 @@ var (
 
 	mockServerCmd = &cobra.Command{
 		Use:   "serve",
-		Short: "Build a mock server from a proto specification",
-		Long:  `Build a mock server from a proto specification in vendastaapis`,
+		Short: "Run a mock server from a proto specification",
+		Long:  `Run a mock server from a proto specification in vendastaapis`,
 		RunE:  runMockServer,
+	}
+
+	mockServerHelperCmd = &cobra.Command{
+		Use:   "serve-ng",
+		Short: "Run a mock server for an Angular App",
+		Long:  `Run a mock server with extra prompts to help integrate with an Angular app`,
+		RunE:  runMockServerForAngular,
 	}
 )
 
@@ -45,6 +53,7 @@ func init() {
 		"Randomization seed: Choose one of [breadcrumb, time]")
 
 	RootCmd.AddCommand(mockServerCmd)
+	RootCmd.AddCommand(mockServerHelperCmd)
 }
 
 func getProtoRootDirectory() string {
@@ -58,6 +67,17 @@ func getProtoRootDirectory() string {
 }
 
 func runMockServer(cmd *cobra.Command, args []string) error {
-	return mockserver.BuildAndRun(mockServerPort, mockServerAllowedOrigin,
-		mockServerSource, mockServerConfigFile, mockServerRandomValueSource)
+	return mockserver.BuildAndRun(
+		mockServerPort, mockServerAllowedOrigin, mockServerSource,
+		mockServerConfigFile, mockServerRandomValueSource,
+		config.AssistUnset,
+	)
+}
+
+func runMockServerForAngular(cmd *cobra.Command, args []string) error {
+	return mockserver.BuildAndRun(
+		mockServerPort, mockServerAllowedOrigin, mockServerSource,
+		mockServerConfigFile, mockServerRandomValueSource,
+		config.AssistAngular,
+	)
 }

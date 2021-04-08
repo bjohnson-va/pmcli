@@ -1,8 +1,13 @@
 package mockserver
 
-import "context"
+import (
+	"context"
+
+	"github.com/bjohnson-va/pmcli/config"
+)
 
 type Server interface {
-	ListenAndServe() error
+	ListenAndServe(ctx context.Context) error
 	Shutdown(ctx context.Context) error
+	SetAssists(a config.AssistEnum)
 }

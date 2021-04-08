@@ -12,6 +12,14 @@ import (
 const FILENAME = "mockserver.json"
 const UseHTTPSToken = "useHttps"
 
+type AssistEnum int
+
+const (
+	AssistUnset AssistEnum = iota
+	AssistAngular
+)
+
+
 type Inputs struct {
 	RPCName        string
 	ProtofileNames []string
