@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"github.com/bjohnson-va/pmcli/mockserver"
-	"github.com/spf13/cobra"
 	"os"
 	"strings"
+
+	"github.com/bjohnson-va/pmcli/mockserver"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -13,6 +14,7 @@ var (
 	mockServerSource            string
 	mockServerConfigFile        string
 	mockServerRandomValueSource string
+	mockServerInteractive       bool
 
 	mockServerCmd = &cobra.Command{
 		Use:   "serve",
@@ -44,6 +46,11 @@ func init() {
 		"breadcrumb",
 		"Randomization seed: Choose one of [breadcrumb, time]")
 
+	mockServerCmd.Flags().BoolVarP(&mockServerInteractive, "interactive", "i",
+		true,
+		"Interactive prompts. Set True to configure endpoint at runtime. "+
+			"False will reach from config file only with auto-reload.")
+
 	RootCmd.AddCommand(mockServerCmd)
 }
 
@@ -58,6 +65,8 @@ func getProtoRootDirectory() string {
 }
 
 func runMockServer(cmd *cobra.Command, args []string) error {
-	return mockserver.BuildAndRun(mockServerPort, mockServerAllowedOrigin,
-		mockServerSource, mockServerConfigFile, mockServerRandomValueSource)
+	return mockserver.BuildAndRun(
+		mockServerPort, mockServerAllowedOrigin, mockServerSource,
+		mockServerConfigFile, mockServerRandomValueSource, mockServerInteractive,
+	)
 }

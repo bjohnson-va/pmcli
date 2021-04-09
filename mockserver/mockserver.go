@@ -4,20 +4,24 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/bjohnson-va/pmcli/certs"
 	"github.com/bjohnson-va/pmcli/config"
+	configUpdater "github.com/bjohnson-va/pmcli/config/updater"
 	"github.com/bjohnson-va/pmcli/handlers"
 	"github.com/bjohnson-va/pmcli/random"
 	"github.com/fsnotify/fsnotify"
 	"github.com/vendasta/gosdks/logging"
-	"net/http"
-	"os"
 )
 
 // TODO: Helper for generating initial config file
 
-func BuildAndRun(mockServerPort int64, allowedOrigin string,
-	rootDir string, configFile string, randomSeed string) error {
+func BuildAndRun(
+	mockServerPort int64, allowedOrigin string,
+	rootDir string, configFile string, randomSeed string, interactive bool,
+) error {
 	ctx := context.Background()
 
 	d := serverDetails{
@@ -26,6 +30,7 @@ func BuildAndRun(mockServerPort int64, allowedOrigin string,
 		rootDir:        rootDir,
 		configFilePath: configFile,
 		randomSeed:     randomSeed,
+		interactive:    interactive,
 	}
 	err := runServerInBackgroundAndRestartOnConfigFileChanges(ctx, d)
 	if err != nil {
@@ -40,35 +45,53 @@ type serverDetails struct {
 	rootDir        string
 	configFilePath string
 	randomSeed     string
+	interactive    bool
 }
 
 func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d serverDetails) error {
-	srv, err := prepareServerFromConfig(ctx, d)
+	srvRes, err := prepareServerFromConfig(ctx, d)
 	if err != nil {
 		return fmt.Errorf("problem preparing server: %s", err.Error())
 	}
+	srv := srvRes.server
 	go func() {
 		err := srv.ListenAndServe()
 		if err != nil {
 			logging.Errorf(ctx, "Error on ListenAndServe: %s", err.Error())
 		}
 	}()
-	err = startNewServerOnConfigFileChanges(ctx, srv, d)
+
+	logging.Infof(ctx, "ineractive %t", d.interactive)
+	if d.interactive {
+		cfg, err := config.ReadFile(d.configFilePath)
+		if err != nil {
+			return fmt.Errorf("error reading config [%s]: %s", d.configFilePath, err.Error())
+		}
+		u := configUpdater.NewUpdater(*cfg)
+		err = showInteractivePrompts(ctx, srvRes.endpoints, u, d)
+	} else {
+		err = startNewServerOnConfigFileChanges(ctx, srv, d)
+	}
 	if err != nil {
 		return fmt.Errorf("unable to start server: %s", err.Error())
 	}
 	return nil
 }
 
-func prepareServerFromConfig(ctx context.Context, d serverDetails) (Server, error) {
+type ServerResult struct {
+	server    Server
+	endpoints []string
+}
+
+func prepareServerFromConfig(ctx context.Context, d serverDetails) (ServerResult, error) {
 	cfg, err := config.ReadFile(d.configFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading config [%s]: %s", d.configFilePath, err.Error())
+		return ServerResult{}, fmt.Errorf("error reading config [%s]: %s", d.configFilePath, err.Error())
 	}
 	port := determinePortNumber(d, cfg)
-	mux, err := buildServerMux(ctx, d, cfg)
+	muxRes, err := buildServerMux(ctx, d, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build server mux: %s", err.Error())
+		return ServerResult{}, fmt.Errorf("failed to build server mux: %s", err.Error())
 	}
 	s := "http"
 	if cfg.Https {
@@ -78,7 +101,7 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (Server, erro
 
 	insecureSrv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
+		Handler: muxRes.mux,
 	}
 	var httpSrv Server
 	httpSrv = insecureSrv
@@ -90,7 +113,10 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (Server, erro
 	}
 	logging.Infof(ctx, "Server will use %s (From %s in %s)", schema, config.UseHTTPSToken, config.FILENAME)
 
-	return httpSrv, nil
+	return ServerResult{
+		server:    httpSrv,
+		endpoints: muxRes.endpoints,
+	}, nil
 }
 
 func determinePortNumber(d serverDetails, cfg *config.File) int64 {
@@ -154,8 +180,16 @@ func startNewServerOnConfigFileChanges(ctx context.Context, srv Server, d server
 	return nil
 }
 
-func buildServerMux(ctx context.Context, d serverDetails, configs *config.File) (
-	*http.ServeMux, error) {
+type ServeMuxResult struct {
+	mux       *http.ServeMux
+	endpoints []string
+}
+
+var nilResult = ServeMuxResult{}
+
+func buildServerMux(
+	ctx context.Context, d serverDetails, configs *config.File,
+) (ServeMuxResult, error) {
 
 	r := initializeRandomProvider(ctx, d.randomSeed)
 
@@ -178,7 +212,7 @@ func buildServerMux(ctx context.Context, d serverDetails, configs *config.File) 
 	for _, p := range configs.ProtofileNames {
 		h, err := handlers.FromProtofile(hbc, p)
 		if err != nil {
-			return nil, fmt.Errorf("failed to make handlers: %s", err.Error())
+			return nilResult, fmt.Errorf("failed to make handlers: %s", err.Error())
 		}
 
 		for _, handler := range h {
@@ -190,7 +224,10 @@ func buildServerMux(ctx context.Context, d serverDetails, configs *config.File) 
 
 	buildRootHandler(ctx, mux, mockedPaths)
 
-	return mux, nil
+	return ServeMuxResult{
+		mux:       mux,
+		endpoints: mockedPaths,
+	}, nil
 }
 
 func buildRootHandler(ctx context.Context, mux *http.ServeMux, mockedPaths []string) {

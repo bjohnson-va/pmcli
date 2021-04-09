@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/bjohnson-va/pmcli/config"
 	"github.com/bjohnson-va/pmcli/parse"
 	"github.com/bjohnson-va/pmcli/protofiles"
@@ -11,9 +15,6 @@ import (
 	"github.com/emicklei/proto"
 	"github.com/vendasta/gosdks/logging"
 	"github.com/vendasta/gosdks/util"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type HTTPHandler struct {
@@ -24,7 +25,7 @@ type HTTPHandler struct {
 type HandlerBuildingConfig struct {
 	AllowedOrigin     string
 	ProtofileRootPath string
-	AllConfig         map[string]interface{}
+	AllConfig         config.Map
 	RandomProvider    *random.FieldProvider
 }
 
@@ -71,9 +72,9 @@ func buildHandlersForServices(hbc HandlerBuildingConfig, services []proto.Servic
 func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.FieldTypes, p *random.FieldProvider, c *config.Inputs) HTTPHandler {
 	ctx := context.Background() // New Handler -> new Context
 	// json unmarshal defaults to float64
-	statusCode := int(c.GetRPCInstruction("statusCode", 200.0).(float64))
-	delaySeconds := c.GetRPCInstruction("delaySeconds", 0.0).(float64)
-	emptyBody := c.GetRPCInstruction("emptyBody", false).(bool)
+	statusCode := c.Instructions.StatusCode
+	delaySeconds := c.Instructions.DelaySecs
+	emptyBody := c.Instructions.EmptyBody
 
 	if emptyBody || rpc.ReturnsType == "google.protobuf.Empty" {
 		return HTTPHandler{
@@ -128,7 +129,7 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 	}
 }
 
-func delay(ctx context.Context, seconds float64) {
+func delay(ctx context.Context, seconds int) {
 	if seconds <= 0 {
 		return
 	}

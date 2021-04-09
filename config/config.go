@@ -3,10 +3,11 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/emicklei/proto"
-	"github.com/vendasta/gosdks/util"
 	"io/ioutil"
 	"os"
+
+	"github.com/emicklei/proto"
+	"github.com/vendasta/gosdks/util"
 )
 
 const FILENAME = "mockserver.json"
@@ -15,28 +16,22 @@ const UseHTTPSToken = "useHttps"
 type Inputs struct {
 	RPCName        string
 	ProtofileNames []string
-	overrides      map[string]interface{}
-	instructions   map[string]interface{}
+	overrides      map[string]RPCFieldOverrides
+	Instructions   RPCInstructions
 	exclusions     map[string]bool
 }
 
-func (c *Inputs) GetRPCInstruction(instruction string, defaultValue interface{}) interface{} {
-	var statusCode interface{}
-	statusCode, ok := c.instructions[instruction]
-	if ok {
-		return statusCode
-	}
-	return defaultValue
-}
-
 func (c *Inputs) GetFieldOverride(fieldBreadcrumb string, defaultValue interface{}) interface{} {
-	return getFieldConfig(c.overrides, fieldBreadcrumb, defaultValue)
+	v, ok := c.overrides[fieldBreadcrumb]
+	if !ok {
+		return defaultValue
+	}
+	return v
 }
 
 func (c *Inputs) GetFieldInstruction(fieldBreadcrumb string, instructionKey string, defaultValue interface{}) interface{} {
-
-	fields, ok := c.instructions["fields"].(map[string]interface{})
-	if !ok {
+	fields := c.Instructions.Fields
+	if len(fields) == 0 {
 		return defaultValue
 	}
 	cf := getFieldConfig(fields, fieldBreadcrumb, defaultValue).(map[string]interface{})
@@ -84,73 +79,75 @@ func (c *Inputs) GetFieldExclusion(fieldBreadcrumb string) bool {
 	return false
 }
 
-func GetInputsForRPC(s proto.Service, r proto.RPC, config map[string]interface{}) (*Inputs, error) {
+func GetInputsForRPC(s proto.Service, r proto.RPC, config Map) (*Inputs, error) {
 	i, err := readForRPC("instructions", s, r, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read instructions: %s", err.Error())
+	}
+	ic, ok := i.(RPCInstructions)
+	if !ok {
+		return nil, fmt.Errorf("failed to assert type for instructions")
 	}
 	o, err := readForRPC("overrides", s, r, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read overrides: %s", err.Error())
 	}
-	e, err := readListForRPC("exclusions", s, r, config)
+
+	oc, ok := o.(RPCOverrides)
+	if !ok {
+		fmt.Printf("\n\noc ====> %+v\n\n", oc)
+		return nil, fmt.Errorf("failed to assert type for overrides")
+	}
+	e, err := readExclusionsForRPC("exclusions", s, r, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read overrides: %s", err.Error())
 	}
 	return &Inputs{
 		RPCName:      r.Name,
-		instructions: i,
-		overrides:    o,
+		Instructions: ic,
+		overrides:    oc,
 		exclusions:   e,
 	}, nil
 }
 
-func readForRPC(category string, s proto.Service, r proto.RPC, config map[string]interface{}) (map[string]interface{}, error) {
-	c, ok := config[category]
-	if !ok {
-		return map[string]interface{}{}, nil
-	}
-	configMap, ok := c.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("invalid format for config section: %s", category)
-	}
+func readForRPC(category string, s proto.Service, r proto.RPC, config Map) (interface{}, error) {
 	key := s.Name + "/" + r.Name
-	i, ok := configMap[key]
-	if !ok {
-		legacyKey := s.Name + "." + r.Name
-		i, ok = configMap[legacyKey]
+	legacyKey := s.Name + "." + r.Name
+	var i interface{}
+	var ok bool
+	switch category {
+	case "instructions":
+		i, ok = config.Instructions[key]
 		if !ok {
-			return map[string]interface{}{}, nil
+			i = config.Instructions[legacyKey]
+		}
+	case "overrides":
+		i, ok = config.Overrides[key]
+		if !ok {
+			i = config.Overrides[legacyKey]
+		}
+	case "exclusions":
+		i, ok = config.Exclusions[key]
+		if !ok {
+			i = config.Exclusions[legacyKey]
 		}
 	}
-	a, ok := i.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("bad config value for key %s: %#v", key, i)
+	if i == nil {
+		return map[string]interface{}{}, nil
 	}
-	return a, nil
+	return i, nil
 }
 
-func readListForRPC(category string, s proto.Service, r proto.RPC, config map[string]interface{}) (map[string]bool, error) {
-	c, ok := config[category]
-	if !ok {
-		return map[string]bool{}, nil
-	}
-	exclusionsByRPC, ok := c.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("invalid format for exclusion section: %s", category)
-	}
+func readExclusionsForRPC(category string, s proto.Service, r proto.RPC, config Map) (map[string]bool, error) {
+	exclusionsByRPC := config.Exclusions
 	rpcKey := s.Name + "/" + r.Name
-	i, ok := exclusionsByRPC[rpcKey]
+	a, ok := exclusionsByRPC[rpcKey]
 	if !ok {
 		legacyKey := s.Name + "." + r.Name
-		i, ok = exclusionsByRPC[legacyKey]
+		a, ok = exclusionsByRPC[legacyKey]
 		if !ok {
 			return map[string]bool{}, nil
 		}
-	}
-	a, ok := i.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("Couldnt get list for key %s: %#v", rpcKey, i)
 	}
 	var out = map[string]bool{}
 	for _, x := range a {
@@ -159,8 +156,25 @@ func readListForRPC(category string, s proto.Service, r proto.RPC, config map[st
 	return out, nil
 }
 
+type RPCInstructions struct {
+	DelaySecs  int
+	StatusCode int
+	Fields     map[string]interface{}
+	EmptyBody  bool
+}
+type RPCFieldOverrides struct {
+}
+type RPCOverrides map[string]RPCFieldOverrides
+type RPCExclusions []interface{}
+
+type Map struct {
+	Instructions map[string]RPCInstructions
+	Overrides    map[string]RPCOverrides
+	Exclusions   map[string]RPCExclusions
+}
+
 type File struct {
-	ConfigMap      map[string]interface{}
+	ConfigMap      Map // TODO: Can this not be an interface{}?
 	ProtofileNames []string
 	AllowedOrigin  string
 	Port           int64
@@ -218,11 +232,44 @@ func parseConfig(fileContents []byte) (*File, error) {
 		https = true
 	}
 
+	instructions := parseInstructions(i["instructions"])
+
 	return &File{
-		ConfigMap:      i,
+		ConfigMap: Map{
+			Instructions: instructions,
+		},
 		ProtofileNames: protofiles,
 		AllowedOrigin:  allowedOrigin,
 		Port:           port,
-		Https:       https,
+		Https:          https,
 	}, nil
+}
+
+func parseInstructions(i interface{}) map[string]RPCInstructions {
+	m, ok := i.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	out := make(map[string]RPCInstructions, len(m))
+	for rpc, inst := range m {
+		vs, ok := inst.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		ins := RPCInstructions{}
+		ds, ok := vs["delaySeconds"].(int)
+		if ok {
+			ins.DelaySecs = ds
+		}
+		sc, ok := vs["statusCode"].(int)
+		if ok {
+			ins.StatusCode = sc
+		}
+		eb, ok := vs["emptyBody"].(bool)
+		if ok {
+			ins.EmptyBody = eb
+		}
+		out[rpc] = ins
+	}
+	return out
 }
