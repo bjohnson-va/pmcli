@@ -20,6 +20,7 @@ require (
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c // indirect
 	github.com/spf13/cobra v0.0.1
 	github.com/spf13/pflag v1.0.0 // indirect
+	github.com/stretchr/testify v1.7.0
 	github.com/vendasta/gosdks v0.0.0-20180223153716-1336940b28f3
 	golang.org/x/net v0.0.0-20180218175443-cbe0f9307d01 // indirect
 	golang.org/x/oauth2 v0.0.0-20170912212905-13449ad91cb2 // indirect

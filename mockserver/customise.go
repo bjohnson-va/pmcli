@@ -17,7 +17,7 @@ func showCustomizeEndpointsPrompts(
 	options := buildCustomizeMenuOptions(ctx, reader, endpoints, updater)
 	for {
 		fmt.Println(options)
-		fmt.Printf("Choose an option: ")
+		fmt.Printf("Choose an endpoint to customize: ")
 		text, _ := reader.ReadString('\n')
 		text = strings.TrimSpace(text)
 		num, err := strconv.Atoi(text)
@@ -99,20 +99,24 @@ func buildCustomizeSpecificEndpointMenuOptions(
 			},
 		},
 		{
-			Name: "Quit",
+			Name: "Set response status code",
 			Fn: func() {
-				fmt.Println("Goodbye 👋")
+				err := setStatusCode(ctx, reader, endpoint, updater)
+				if err != nil {
+					fmt.Printf("Could not set response code: %s", err.Error())
+				}
 			},
+		},
+		{
+			Name:      "Back to main",
+			Fn:        func() {},
 			ExitAfter: true,
 		},
 	}
 }
 
 func setResponseDelay(ctx context.Context, reader *bufio.Reader, endpoint string, updater ServerUpdater) error {
-	fmt.Printf("How many seconds to delay? ")
-	text, _ := reader.ReadString('\n')
-	text = strings.TrimSpace(text)
-	secs, err := strconv.Atoi(text)
+	secs, err := getNumberFromUser(reader, "How many seconds to delay?")
 	if err != nil {
 		return fmt.Errorf("failed to parse response: %s", err.Error())
 	}
@@ -129,4 +133,31 @@ func setResponseDelay(ctx context.Context, reader *bufio.Reader, endpoint string
 		return fmt.Errorf("failed to update config and restart server: %s", err.Error())
 	}
 	return nil
+}
+
+func setStatusCode(ctx context.Context, reader *bufio.Reader, endpoint string, updater ServerUpdater) error {
+	secs, err := getNumberFromUser(reader, "Which status code?")
+	if err != nil {
+		return fmt.Errorf("failed to parse response: %s", err.Error())
+	}
+	err = updater.UpdateAndRestart(ctx, config.Mutation{
+		ConfigMap: config.Map{
+			Instructions: map[string]config.RPCInstructions{
+				endpoint: {
+					StatusCode: secs,
+				},
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to update config and restart server: %s", err.Error())
+	}
+	return nil
+}
+
+func getNumberFromUser(reader *bufio.Reader, msg string) (int, error) {
+	fmt.Printf("%s ", msg)
+	text, _ := reader.ReadString('\n')
+	text = strings.TrimSpace(text)
+	return strconv.Atoi(text)
 }

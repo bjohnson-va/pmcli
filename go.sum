@@ -3,6 +3,7 @@ cloud.google.com/go v0.15.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 github.com/DataDog/datadog-go v0.0.0-20180129105149-9487d3a9d3be h1:31IgTu8jwQ6z0xz2r55LdVIJDJN1KDq0HZ/BRCi14QA=
 github.com/DataDog/datadog-go v0.0.0-20180129105149-9487d3a9d3be/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/emicklei/proto v1.2.0 h1:d41uGhIdiEDkcAqjoJWkAGrQdVpngQo0wip3avrHa1Q=
 github.com/emicklei/proto v1.2.0/go.mod h1:Dqn751twH9SasYqvA59Lb9Hz+itoJgmMoivX6k7OPZc=
@@ -29,6 +30,7 @@ github.com/mattheath/kala v0.0.0-20171219141654-d6276794bf0e h1:cj+w63ez19o7y7vu
 github.com/mattheath/kala v0.0.0-20171219141654-d6276794bf0e/go.mod h1:OFd5kqMcMRr5LyBjZulGPJxaEK9r/jQ6JCV4Xi32bKo=
 github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c h1:MUyE44mTvnI5A0xrxIxaMqoWFzPfQvtE2IWUollMDMs=
 github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c/go.mod h1:VyrYX9gd7irzKovcSS6BIIEwPRkP2Wm2m9ufcdFSJ34=
+github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/spf13/cobra v0.0.1 h1:zZh3X5aZbdnoj+4XkaBxKfhO4ot82icYdhhREIAXIj8=
 github.com/spf13/cobra v0.0.1/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
@@ -36,7 +38,10 @@ github.com/spf13/pflag v1.0.0 h1:oaPbdDe/x0UncahuwiPxW1GYJyilRAdsPnq3e1yaPcI=
 github.com/spf13/pflag v1.0.0/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
+github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
+github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
+github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/vendasta/gosdks v0.0.0-20180223153716-1336940b28f3 h1:h1Gi9BKROdmWESqX7zqeKvUjF7hmuTbeNgpCtTo+QQ0=
 github.com/vendasta/gosdks v0.0.0-20180223153716-1336940b28f3/go.mod h1:pnc30tM4hvx8mqkzpOj2ktVpJgCvbnqoAm4JET3WIvY=
 golang.org/x/net v0.0.0-20180218175443-cbe0f9307d01 h1:po1f06KS05FvIQQA2pMuOWZAUXiy1KYdIf0ElUU2Hhc=
@@ -62,4 +67,7 @@ google.golang.org/grpc v1.10.0/go.mod h1:yo6s7OP7yaDglbqo1J04qKzAhqBH6lvTonzMVmE
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+gopkg.in/yaml.v2 v2.2.4 h1:/eiJrUcujPVeJ3xlSWaiNi3uSVmDGBK1pDHUHAnao1I=
 gopkg.in/yaml.v2 v2.2.4/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c h1:dUUwHk2QECo/6vqA44rthZ8ie2QXMNeKRTHCNY2nXvo=
+gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=

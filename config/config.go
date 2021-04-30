@@ -174,11 +174,26 @@ func readExclusionsForRPC(category string, s proto.Service, r proto.RPC, config 
 	return out, nil
 }
 
+type EmptyBody int
+
+func EmptyBodyFromBool(eb bool) EmptyBody {
+	if eb {
+		return EmptyBody_True
+	}
+	return EmptyBody_False
+}
+
+const (
+	EmptyBody_Unset = iota
+	EmptyBody_True
+	EmptyBody_False
+)
+
 type RPCInstructions struct {
 	DelaySecs  int
 	StatusCode int
 	Fields     map[string]interface{}
-	EmptyBody  bool
+	EmptyBody  EmptyBody
 }
 
 func (r RPCInstructions) String() string {
@@ -301,7 +316,7 @@ func parseInstructions(i interface{}) map[string]RPCInstructions {
 		}
 		eb, ok := vs["emptyBody"].(bool)
 		if ok {
-			ins.EmptyBody = eb
+			ins.EmptyBody = EmptyBodyFromBool(eb)
 		}
 		out[rpc] = ins
 	}

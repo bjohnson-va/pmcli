@@ -10,6 +10,8 @@ cloud.google.com/go/trace
 # github.com/DataDog/datadog-go v0.0.0-20180129105149-9487d3a9d3be
 ## explicit
 github.com/DataDog/datadog-go/statsd
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
 # github.com/emicklei/proto v1.2.0
 ## explicit
 github.com/emicklei/proto
@@ -53,12 +55,18 @@ github.com/mattheath/kala/util
 # github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 ## explicit
 github.com/pborman/uuid
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
 # github.com/spf13/cobra v0.0.1
 ## explicit
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.0
 ## explicit
 github.com/spf13/pflag
+# github.com/stretchr/testify v1.7.0
+## explicit
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
 # github.com/vendasta/gosdks v0.0.0-20180223153716-1336940b28f3
 ## explicit
 github.com/vendasta/gosdks/config
@@ -163,3 +171,5 @@ google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
 google.golang.org/grpc/transport
+# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+gopkg.in/yaml.v3

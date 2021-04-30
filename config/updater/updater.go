@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/bjohnson-va/pmcli/config"
@@ -27,7 +28,7 @@ func (u *Updater) hasUnsavedChanged() bool {
 }
 
 func (u *Updater) UpdateAndRestart(ctx context.Context, m config.Mutation) error {
-	u.applyMutation(m)
+	u.inMemoryConfig = applyMutation(*u.inMemoryConfig, m)
 	u.unsavedChanges = true
 	err := u.activeServer.Shutdown(ctx)
 	if err != nil {
@@ -43,26 +44,13 @@ func (u *Updater) UpdateAndRestart(ctx context.Context, m config.Mutation) error
 
 	go func() {
 		err := u.activeServer.ListenAndServe()
-		if err != nil {
+		if err != nil && err != http.ErrServerClosed {
 			fmt.Printf("Could not start servers: %s", err.Error())
 			os.Exit(1)
 		}
 	}()
 
 	return nil
-}
-
-func (u *Updater) applyMutation(m config.Mutation) {
-	for key, value := range m.ConfigMap.Instructions {
-		fmt.Printf("Setting inMemoryConfig.ConfigMap.Instructions[%s] to %s\n", key, value)
-		u.inMemoryConfig.ConfigMap.Instructions[key] = value
-	}
-	for key, value := range m.ConfigMap.Exclusions {
-		u.inMemoryConfig.ConfigMap.Exclusions[key] = value
-	}
-	for key, value := range m.ConfigMap.Overrides {
-		u.inMemoryConfig.ConfigMap.Overrides[key] = value
-	}
 }
 
 func (u *Updater) SaveChangesToDisk() error {

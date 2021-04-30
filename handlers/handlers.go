@@ -78,7 +78,7 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 	delaySeconds := c.Instructions.DelaySecs
 	emptyBody := c.Instructions.EmptyBody
 
-	if emptyBody || rpc.ReturnsType == "google.protobuf.Empty" {
+	if emptyBody == config.EmptyBody_True || rpc.ReturnsType == "google.protobuf.Empty" {
 		return HTTPHandler{
 			Path: path,
 			HandlerFunc: func(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +90,7 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 					w.WriteHeader(200)
 					return
 				}
-				delay(ctx, delaySeconds)
+				delay(delaySeconds)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(statusCode)
 			},
@@ -120,10 +120,10 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
 
-		delay(ctx, delaySeconds)
+		delay(delaySeconds)
 		obj := GenerateRandomFieldsForMessage(ctx, p, *foundMessage, t, c)
 		marshaled, _ := json.MarshalIndent(obj, "", "    ")
-		w.Write(([]byte)(marshaled))
+		w.Write(marshaled)
 	}
 	return HTTPHandler{
 		Path:        path,
@@ -131,11 +131,10 @@ func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.Fiel
 	}
 }
 
-func delay(ctx context.Context, seconds int) {
+func delay(seconds int) {
 	if seconds <= 0 {
 		return
 	}
-	logging.Infof(ctx, "Delaying %.2f seconds as instructed in config", seconds)
 	time.Sleep(time.Second * time.Duration(seconds))
 }
 
