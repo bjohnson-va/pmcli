@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
@@ -61,6 +62,17 @@ func buildMainMenuOptions(
 			Name: "Customize an endpoint's behaviour",
 			Fn: func() {
 				showCustomizeEndpointsPrompts(ctx, reader, endpoints, srv)
+			},
+		},
+		{
+			Name: "Open insecure chromium browser",
+			Fn: func() {
+				go func() {
+					err := exec.Command("chromium", "--disable-web-security", "--user-data-dir=~/chromeTemp").Run()
+					if err != nil {
+						fmt.Printf("Failed to open chromium: %s", err.Error())
+					}
+				}()
 			},
 		},
 		{
