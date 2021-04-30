@@ -12,12 +12,12 @@ import (
 )
 
 type ServerUpdater interface {
-	UpdateAndRestart(d config.File) error
+	UpdateAndRestart(ctx context.Context, d config.Mutation) error
 }
 
-func showInteractivePrompts(ctx context.Context, endpoints []string, srv ServerUpdater, d serverDetails) error {
+func showInteractivePrompts(ctx context.Context, endpoints []string, srv ServerUpdater) error {
 	reader := bufio.NewReader(os.Stdin)
-	options := buildMainMenuOptions(reader, endpoints, srv)
+	options := buildMainMenuOptions(ctx, reader, endpoints, srv)
 	for {
 		fmt.Println(options)
 		fmt.Printf("Choose an option: ")
@@ -53,13 +53,14 @@ func (m menuOptions) String() string {
 }
 
 func buildMainMenuOptions(
-	reader *bufio.Reader, endpoints []string, srv ServerUpdater,
+	ctx context.Context, reader *bufio.Reader, endpoints []string,
+	srv ServerUpdater,
 ) menuOptions {
 	return []menuOption{
 		{
 			Name: "Customize an endpoint's behaviour",
 			Fn: func() {
-				showCustomizeEndpointsPrompts(reader, endpoints, srv)
+				showCustomizeEndpointsPrompts(ctx, reader, endpoints, srv)
 			},
 		},
 		{

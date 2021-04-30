@@ -57,8 +57,9 @@ func buildHandlersForServices(hbc HandlerBuildingConfig, services []proto.Servic
 	for _, s := range services {
 		rpcs := parse.RPCs(s.Elements)
 		for _, r := range rpcs {
+			fmt.Println(packageName)
 			p := "/" + packageName + "." + s.Name + "/" + r.Name // TODO: . should be /
-			c, err := config.GetInputsForRPC(s, r, hbc.AllConfig)
+			c, err := config.GetInputsForRPC(packageName, s, r, hbc.AllConfig)
 			if err != nil {
 				return nil, fmt.Errorf("problem reading config: %s", err.Error())
 			}
@@ -72,7 +73,8 @@ func buildHandlersForServices(hbc HandlerBuildingConfig, services []proto.Servic
 func fakeHandler(allowedOrigin string, path string, rpc proto.RPC, t *parse.FieldTypes, p *random.FieldProvider, c *config.Inputs) HTTPHandler {
 	ctx := context.Background() // New Handler -> new Context
 	// json unmarshal defaults to float64
-	statusCode := c.Instructions.StatusCode
+	fmt.Printf("Config for %s is %s\n", path, c.Instructions)
+	statusCode := c.Instructions.GetStatusCode()
 	delaySeconds := c.Instructions.DelaySecs
 	emptyBody := c.Instructions.EmptyBody
 

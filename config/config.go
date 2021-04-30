@@ -29,7 +29,9 @@ func (c *Inputs) GetFieldOverride(fieldBreadcrumb string, defaultValue interface
 	return v
 }
 
-func (c *Inputs) GetFieldInstruction(fieldBreadcrumb string, instructionKey string, defaultValue interface{}) interface{} {
+func (c *Inputs) GetFieldInstruction(
+	fieldBreadcrumb string, instructionKey string, defaultValue interface{},
+) interface{} {
 	fields := c.Instructions.Fields
 	if len(fields) == 0 {
 		return defaultValue
@@ -72,15 +74,17 @@ func (c *Inputs) GetFieldExclusion(fieldBreadcrumb string) bool {
 	if ok {
 		return i
 	}
-	//i, ok = c.exclusions[util.ToCamelCase(fieldBreadcrumb)]
-	//if ok {
+	// i, ok = c.exclusions[util.ToCamelCase(fieldBreadcrumb)]
+	// if ok {
 	//	return i
-	//}
+	// }
 	return false
 }
 
-func GetInputsForRPC(s proto.Service, r proto.RPC, config Map) (*Inputs, error) {
-	i, err := readForRPC("instructions", s, r, config)
+func GetInputsForRPC(
+	packageName string, s proto.Service, r proto.RPC, config Map,
+) (*Inputs, error) {
+	i, err := readForRPC("instructions", packageName, s, r, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read instructions: %s", err.Error())
 	}
@@ -88,7 +92,7 @@ func GetInputsForRPC(s proto.Service, r proto.RPC, config Map) (*Inputs, error) 
 	if !ok {
 		return nil, fmt.Errorf("failed to assert type for instructions")
 	}
-	o, err := readForRPC("overrides", s, r, config)
+	o, err := readForRPC("overrides", packageName, s, r, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read overrides: %s", err.Error())
 	}
@@ -110,26 +114,40 @@ func GetInputsForRPC(s proto.Service, r proto.RPC, config Map) (*Inputs, error) 
 	}, nil
 }
 
-func readForRPC(category string, s proto.Service, r proto.RPC, config Map) (interface{}, error) {
-	key := s.Name + "/" + r.Name
-	legacyKey := s.Name + "." + r.Name
+func readForRPC(
+	category string, packageName string, s proto.Service, r proto.RPC, config Map,
+) (interface{}, error) {
+	possibleKeys := []string{
+		fmt.Sprintf("%s.%s/%s", packageName, s.Name, r.Name),
+		fmt.Sprintf("/%s.%s/%s", packageName, s.Name, r.Name),
+		s.Name + "/" + r.Name,
+		s.Name + "." + r.Name,
+	}
+
 	var i interface{}
 	var ok bool
 	switch category {
 	case "instructions":
-		i, ok = config.Instructions[key]
-		if !ok {
-			i = config.Instructions[legacyKey]
+		for _, k := range possibleKeys {
+			i, ok = config.Instructions[k]
+			if ok {
+				break
+			}
+			fmt.Printf("No instructions found for %s\n", k)
 		}
 	case "overrides":
-		i, ok = config.Overrides[key]
-		if !ok {
-			i = config.Overrides[legacyKey]
+		for _, k := range possibleKeys {
+			i, ok = config.Overrides[k]
+			if ok {
+				break
+			}
 		}
 	case "exclusions":
-		i, ok = config.Exclusions[key]
-		if !ok {
-			i = config.Exclusions[legacyKey]
+		for _, k := range possibleKeys {
+			i, ok = config.Exclusions[k]
+			if ok {
+				break
+			}
 		}
 	}
 	if i == nil {
@@ -162,6 +180,18 @@ type RPCInstructions struct {
 	Fields     map[string]interface{}
 	EmptyBody  bool
 }
+
+func (r RPCInstructions) String() string {
+	return fmt.Sprintf("RPCInstructions[Delay: %d, Code: %d, Empty: %t]", r.DelaySecs, r.StatusCode, r.EmptyBody)
+}
+
+func (i RPCInstructions) GetStatusCode() int {
+	if i.StatusCode == 0 {
+		return 200
+	}
+	return i.StatusCode
+}
+
 type RPCFieldOverrides struct {
 }
 type RPCOverrides map[string]RPCFieldOverrides
@@ -179,6 +209,10 @@ type File struct {
 	AllowedOrigin  string
 	Port           int64
 	Https          bool
+}
+
+type Mutation struct {
+	ConfigMap Map
 }
 
 func ReadFile(filename string) (*File, error) {

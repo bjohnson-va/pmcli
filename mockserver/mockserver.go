@@ -12,6 +12,7 @@ import (
 	configUpdater "github.com/bjohnson-va/pmcli/config/updater"
 	"github.com/bjohnson-va/pmcli/handlers"
 	"github.com/bjohnson-va/pmcli/random"
+	"github.com/bjohnson-va/pmcli/server"
 	"github.com/fsnotify/fsnotify"
 	"github.com/vendasta/gosdks/logging"
 )
@@ -24,13 +25,13 @@ func BuildAndRun(
 ) error {
 	ctx := context.Background()
 
-	d := serverDetails{
-		port:           mockServerPort,
-		allowedOrigin:  allowedOrigin,
-		rootDir:        rootDir,
-		configFilePath: configFile,
-		randomSeed:     randomSeed,
-		interactive:    interactive,
+	d := server.Details{
+		Port:           mockServerPort,
+		AllowedOrigin:  allowedOrigin,
+		RootDir:        rootDir,
+		ConfigFilePath: configFile,
+		RandomSeed:     randomSeed,
+		Interactive:    interactive,
 	}
 	err := runServerInBackgroundAndRestartOnConfigFileChanges(ctx, d)
 	if err != nil {
@@ -39,38 +40,24 @@ func BuildAndRun(
 	return nil
 }
 
-type serverDetails struct {
-	port           int64
-	allowedOrigin  string
-	rootDir        string
-	configFilePath string
-	randomSeed     string
-	interactive    bool
-}
-
-func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d serverDetails) error {
-	srvRes, err := prepareServerFromConfig(ctx, d)
+func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d server.Details) error {
+	cfg, err := config.ReadFile(d.ConfigFilePath)
 	if err != nil {
-		return fmt.Errorf("problem preparing server: %s", err.Error())
+		return fmt.Errorf("error reading config [%s]: %s", d.ConfigFilePath, err.Error())
 	}
-	srv := srvRes.server
-	go func() {
-		err := srv.ListenAndServe()
-		if err != nil {
-			logging.Errorf(ctx, "Error on ListenAndServe: %s", err.Error())
-		}
-	}()
 
-	logging.Infof(ctx, "ineractive %t", d.interactive)
-	if d.interactive {
-		cfg, err := config.ReadFile(d.configFilePath)
-		if err != nil {
-			return fmt.Errorf("error reading config [%s]: %s", d.configFilePath, err.Error())
-		}
-		u := configUpdater.NewUpdater(*cfg)
-		err = showInteractivePrompts(ctx, srvRes.endpoints, u, d)
+	src := &serverSource{}
+	srv, err := runServerInBackground(ctx, *cfg, src, d)
+	if err != nil {
+		return fmt.Errorf("failed to run server in background: %s", err.Error())
+	}
+
+	logging.Infof(ctx, "interactive %t", d.Interactive)
+	if d.Interactive {
+		u := configUpdater.NewUpdater(d, srv, *cfg, src)
+		err = showInteractivePrompts(ctx, src.GetEndpoints(), u)
 	} else {
-		err = startNewServerOnConfigFileChanges(ctx, srv, d)
+		err = startNewServerOnConfigFileChanges(ctx, src, srv, d)
 	}
 	if err != nil {
 		return fmt.Errorf("unable to start server: %s", err.Error())
@@ -78,20 +65,34 @@ func runServerInBackgroundAndRestartOnConfigFileChanges(ctx context.Context, d s
 	return nil
 }
 
-type ServerResult struct {
-	server    Server
+func runServerInBackground(
+	ctx context.Context, cfg config.File, src *serverSource, d server.Details,
+) (Server, error) {
+
+	srvRes, err := src.CreateNewServer(ctx, d, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("problem preparing server: %s", err.Error())
+	}
+	go func() {
+		srvRes.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			logging.Errorf(ctx, "Error on ListenAndServe: %s", err.Error())
+		}
+	}()
+	return srvRes, nil
+}
+
+type serverSource struct {
 	endpoints []string
 }
 
-func prepareServerFromConfig(ctx context.Context, d serverDetails) (ServerResult, error) {
-	cfg, err := config.ReadFile(d.configFilePath)
-	if err != nil {
-		return ServerResult{}, fmt.Errorf("error reading config [%s]: %s", d.configFilePath, err.Error())
-	}
+func (ss *serverSource) CreateNewServer(
+	ctx context.Context, d server.Details, cfg config.File,
+) (server.Definition, error) {
 	port := determinePortNumber(d, cfg)
 	muxRes, err := buildServerMux(ctx, d, cfg)
 	if err != nil {
-		return ServerResult{}, fmt.Errorf("failed to build server mux: %s", err.Error())
+		return nil, fmt.Errorf("failed to build server mux: %s", err.Error())
 	}
 	s := "http"
 	if cfg.Https {
@@ -113,14 +114,17 @@ func prepareServerFromConfig(ctx context.Context, d serverDetails) (ServerResult
 	}
 	logging.Infof(ctx, "Server will use %s (From %s in %s)", schema, config.UseHTTPSToken, config.FILENAME)
 
-	return ServerResult{
-		server:    httpSrv,
-		endpoints: muxRes.endpoints,
-	}, nil
+	ss.endpoints = muxRes.endpoints
+
+	return httpSrv, nil
 }
 
-func determinePortNumber(d serverDetails, cfg *config.File) int64 {
-	port := d.port
+func (ss *serverSource) GetEndpoints() []string {
+	return ss.endpoints
+}
+
+func determinePortNumber(d server.Details, cfg config.File) int64 {
+	port := d.Port
 	if port == -1 {
 		port = cfg.Port
 		if port == -1 {
@@ -130,7 +134,7 @@ func determinePortNumber(d serverDetails, cfg *config.File) int64 {
 	return port
 }
 
-func startNewServerOnConfigFileChanges(ctx context.Context, srv Server, d serverDetails) error {
+func startNewServerOnConfigFileChanges(ctx context.Context, src *serverSource, srv Server, d server.Details) error {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return fmt.Errorf("unable to create new watcher: %s", err.Error())
@@ -154,7 +158,7 @@ func startNewServerOnConfigFileChanges(ctx context.Context, srv Server, d server
 				if err != nil {
 					logging.Infof(ctx, "Error starting new server after config change: %s", err.Error())
 					logging.Infof(ctx, "Will retry on further changes")
-					e := startNewServerOnConfigFileChanges(ctx, nil, d)
+					e := startNewServerOnConfigFileChanges(ctx, src, srv, d)
 					if e != nil {
 						logging.Errorf(ctx, "Unable to start file watcher: %s", e.Error())
 					}
@@ -166,14 +170,14 @@ func startNewServerOnConfigFileChanges(ctx context.Context, srv Server, d server
 		}
 	}()
 
-	err = watcher.Add(d.configFilePath)
+	err = watcher.Add(d.ConfigFilePath)
 	if err != nil {
-		if _, err := os.Stat(d.configFilePath); os.IsNotExist(err) {
+		if _, err := os.Stat(d.ConfigFilePath); os.IsNotExist(err) {
 			lm := "Cannot watch file because it doesn't exist: %s"
-			logging.Warningf(ctx, lm, d.configFilePath)
+			logging.Warningf(ctx, lm, d.ConfigFilePath)
 		} else {
 			return fmt.Errorf("error binding watcher to file (%s): %s",
-				d.configFilePath, err.Error())
+				d.ConfigFilePath, err.Error())
 		}
 	}
 	<-done
@@ -188,20 +192,24 @@ type ServeMuxResult struct {
 var nilResult = ServeMuxResult{}
 
 func buildServerMux(
-	ctx context.Context, d serverDetails, configs *config.File,
+	ctx context.Context, d server.Details, configs config.File,
 ) (ServeMuxResult, error) {
 
-	r := initializeRandomProvider(ctx, d.randomSeed)
+	for k, v := range configs.ConfigMap.Instructions {
+		fmt.Printf("buildServerMux(configs).ConfigMap.Instructions[%s] = %s\n", k, v)
+	}
+
+	r := initializeRandomProvider(ctx, d.RandomSeed)
 
 	ao := configs.AllowedOrigin
 	if ao == "" {
-		ao = d.allowedOrigin
+		ao = d.AllowedOrigin
 	}
 
 	mux := http.NewServeMux()
 	hbc := handlers.HandlerBuildingConfig{
 		AllowedOrigin:     ao,
-		ProtofileRootPath: d.rootDir,
+		ProtofileRootPath: d.RootDir,
 		AllConfig:         configs.ConfigMap,
 		RandomProvider:    &r,
 	}

@@ -2,6 +2,7 @@ package mockserver
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,8 +10,11 @@ import (
 	"github.com/bjohnson-va/pmcli/config"
 )
 
-func showCustomizeEndpointsPrompts(reader *bufio.Reader, endpoints []string, updater ServerUpdater) {
-	options := buildCustomizeMenuOptions(reader, endpoints, updater)
+func showCustomizeEndpointsPrompts(
+	ctx context.Context, reader *bufio.Reader, endpoints []string,
+	updater ServerUpdater,
+) {
+	options := buildCustomizeMenuOptions(ctx, reader, endpoints, updater)
 	for {
 		fmt.Println(options)
 		fmt.Printf("Choose an option: ")
@@ -30,14 +34,15 @@ func showCustomizeEndpointsPrompts(reader *bufio.Reader, endpoints []string, upd
 }
 
 func buildCustomizeMenuOptions(
-	reader *bufio.Reader, endpoints []string, updater ServerUpdater,
+	ctx context.Context, reader *bufio.Reader, endpoints []string,
+	updater ServerUpdater,
 ) menuOptions {
 	opts := make(menuOptions, len(endpoints)+1)
 	for i, e := range endpoints {
 		opts[i] = menuOption{
 			Name: e,
 			Fn: func() {
-				showCustomizeSpecificEndpointPrompts(reader, e, updater)
+				showCustomizeSpecificEndpointPrompts(ctx, reader, e, updater)
 			},
 			ExitAfter: false,
 		}
@@ -53,9 +58,10 @@ func buildCustomizeMenuOptions(
 }
 
 func showCustomizeSpecificEndpointPrompts(
-	reader *bufio.Reader, endpoint string, updater ServerUpdater,
+	ctx context.Context, reader *bufio.Reader, endpoint string,
+	updater ServerUpdater,
 ) {
-	options := buildCustomizeSpecificEndpointMenuOptions(reader, endpoint, updater)
+	options := buildCustomizeSpecificEndpointMenuOptions(ctx, reader, endpoint, updater)
 	for {
 		fmt.Println(options)
 		fmt.Printf("Choose an option: ")
@@ -64,6 +70,10 @@ func showCustomizeSpecificEndpointPrompts(
 		num, err := strconv.Atoi(text)
 		if err != nil {
 			fmt.Println(err.Error())
+			continue
+		}
+		if num > len(options) {
+			fmt.Printf("Invalid selection: %d\n", num)
 			continue
 		}
 		c := options[num-1]
@@ -75,13 +85,17 @@ func showCustomizeSpecificEndpointPrompts(
 }
 
 func buildCustomizeSpecificEndpointMenuOptions(
-	reader *bufio.Reader, endpoint string, updater ServerUpdater,
+	ctx context.Context, reader *bufio.Reader, endpoint string,
+	updater ServerUpdater,
 ) menuOptions {
 	return []menuOption{
 		{
 			Name: "Set response delay",
 			Fn: func() {
-				setResponseDelay(reader, endpoint, updater)
+				err := setResponseDelay(ctx, reader, endpoint, updater)
+				if err != nil {
+					fmt.Printf("Could not set response delay: %s", err.Error())
+				}
 			},
 		},
 		{
@@ -94,7 +108,7 @@ func buildCustomizeSpecificEndpointMenuOptions(
 	}
 }
 
-func setResponseDelay(reader *bufio.Reader, endpoint string, updater ServerUpdater) error {
+func setResponseDelay(ctx context.Context, reader *bufio.Reader, endpoint string, updater ServerUpdater) error {
 	fmt.Printf("How many seconds to delay? ")
 	text, _ := reader.ReadString('\n')
 	text = strings.TrimSpace(text)
@@ -102,7 +116,7 @@ func setResponseDelay(reader *bufio.Reader, endpoint string, updater ServerUpdat
 	if err != nil {
 		return fmt.Errorf("failed to parse response: %s", err.Error())
 	}
-	err = updater.UpdateAndRestart(config.File{
+	err = updater.UpdateAndRestart(ctx, config.Mutation{
 		ConfigMap: config.Map{
 			Instructions: map[string]config.RPCInstructions{
 				endpoint: {
